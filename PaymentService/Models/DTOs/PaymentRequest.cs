@@ -7,5 +7,5 @@ public class PaymentRequest
     public Guid? ProductId { get; set; }
     public decimal Amount { get; set; }
     public string Currency { get; set; } // "USD", "EUR"
-    public string Provider { get; set; } // "stripe", "paypal", "mock"
+    public short ProviderId { get; set; }
 }
