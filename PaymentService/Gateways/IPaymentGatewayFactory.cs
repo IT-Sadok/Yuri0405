@@ -1,6 +1,4 @@
-using PaymentService.Gateways;
-
-namespace PaymentService.Services;
+namespace PaymentService.Gateways;
 
 public interface IPaymentGatewayFactory
 {

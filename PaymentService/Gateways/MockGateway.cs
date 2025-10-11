@@ -1,7 +1,6 @@
-using PaymentService.Gateways;
 using PaymentService.Models.DTOs;
 
-namespace PaymentService.Services;
+namespace PaymentService.Gateways;
 
 public class MockGateway: IPaymentGateway
 {
