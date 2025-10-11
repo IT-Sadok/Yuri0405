@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PaymentService.Data;
+using PaymentService.Gateways;
 using PaymentService.Services;
 
 namespace PaymentService;

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PaymentService.Data;
+using PaymentService.Gateways;
 using PaymentService.Models.DTOs;
 using PaymentService.Models.Entities;
 using PaymentService.Models.Enums;
