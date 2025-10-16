@@ -109,6 +109,15 @@ public class PaymentService: IPaymentService
         return MapToPresponse(payment);
     }
 
+    public async Task<IEnumerable<PaymentResponse>> GetAllPaymentsAsync()
+    {
+        var payments = await _dbContext.Payments
+            .OrderByDescending(p => p.CreatedAt)
+            .ToListAsync();
+
+        return payments.Select(MapToPresponse);
+    }
+
     private PaymentResponse MapToPresponse( Payment payment)
     {
         return new PaymentResponse
@@ -116,6 +125,7 @@ public class PaymentService: IPaymentService
             Id = payment.Id,
             IdempotencyKey = payment.IdempotencyKey,
             UserId = payment.UserId,
+            PurchaseId = payment.PurchaseId,
             Amount = payment.Amount,
             Currency = payment.Currency,
             Status = payment.Status.ToString().ToLower(),

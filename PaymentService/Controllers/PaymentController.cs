@@ -61,7 +61,22 @@ public class PaymentController:ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to retrieve payment {PaymentId}", id);
-            return StatusCode(500, new { error = "Internal server error" }); 
+            return StatusCode(500, new { error = "Internal server error" });
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetAllPayments()
+    {
+        try
+        {
+            var response = await _paymentService.GetAllPaymentsAsync();
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to retrieve payments");
+            return StatusCode(500, new { error = "Internal server error" });
         }
     }
 }
