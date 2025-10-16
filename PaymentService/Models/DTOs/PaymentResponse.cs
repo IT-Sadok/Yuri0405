@@ -5,7 +5,7 @@ public class PaymentResponse
     public Guid Id { get; set; }
     public string IdempotencyKey { get; set; }
     public Guid UserId { get; set; }
-    public Guid? ProductId { get; set; }
+    public Guid? PurchaseId { get; set; }
     public decimal Amount { get; set; }
     public string Currency { get; set; }
     public string Provider { get; set; }
