@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using PaymentService.Models.DTOs;
+using PaymentService.Models.Enums;
 using PaymentService.Services;
 
 namespace PaymentService.Controllers;
@@ -31,12 +32,18 @@ public class PaymentController:ControllerBase
         try
         {
             var resposne = await _paymentService.ProcessPaymentAsync(request, idempotencyKey);
+            if (resposne.Status == "failed")
+                return StatusCode(402, new { error = resposne.Message });
             return Ok(resposne);
         }
         catch (ArgumentException ex)
         {
             _logger.LogWarning(ex, "Invalid payment request");
             return BadRequest(new { error = ex.Message });
+        }
+        catch (HttpRequestException ex)
+        {
+            return StatusCode(504, new { error = "Payment gateway is unavailable"});
         }
         catch (Exception ex)
         {

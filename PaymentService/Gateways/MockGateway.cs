@@ -9,15 +9,33 @@ public class MockGateway: IPaymentGateway
     public Task<GatewayResponse> ChargeAsync(GatewayChargeRequest paymentRequest)
     {
         // Simulate success 90% of the time
-        var success = Random.Shared.Next(100) < 90;
-        
+        var random = Random.Shared.Next(100);
+
+        // 10% connection errors (throw exception)
+        if (random < 10)
+        {
+            throw new HttpRequestException("Connection to gateway failed");
+        }
+
+        // 20% declined payments (return failure response)
+        if (random < 30)
+        {
+            return Task.FromResult(new GatewayResponse
+            {
+                Success = false,
+                ErrorMessage = "Insufficient funds",
+                Status = "declined"
+            });
+        }
+
+            // 70% successful payments
         return Task.FromResult(new GatewayResponse
         {
-            Success = success,
-            ProviderPaymentId = success ? $"mock_{Guid.NewGuid()}" : null,
-            ErrorMessage = success ? null : "Insufficient funds",
-            Status = success ? "succeeded" : "failed"
+            Success = true,
+            ProviderPaymentId = $"mock_{Guid.NewGuid()}",
+            Status = "succeeded"
         });
+            
     }
 
     public Task<GatewayResponse> RefundAsync(string providerPaymentId, decimal amount)
