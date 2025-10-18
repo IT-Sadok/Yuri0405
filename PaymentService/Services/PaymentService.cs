@@ -73,30 +73,56 @@ public class PaymentService: IPaymentService
         {
             result = await gateway.ChargeAsync(gatewayRequest);
         }
+        catch (HttpRequestException e)
+        {
+            _logger.LogError(e,
+                "Network error occurred while processing payment {PaymentId}. This is a transient error that may succeed on retry.",
+                payment.Id);
+            payment.Status = PaymentStatus.Failed;
+            payment.FailureReason = "Network error: Gateway communication failure";
+            payment.UpdatedAt = DateTime.UtcNow;
+            await _dbContext.SaveChangesAsync();
+            throw;
+        }
         catch (Exception e)
         {
             _logger.LogError(e,
-                "Gateway call failed for payment {PaymentId}",
+                "Unexpected error occurred while processing payment {PaymentId}",
                 payment.Id);
             payment.Status = PaymentStatus.Failed;
-            payment.FailureReason = "Gateway communication failure";
+            payment.FailureReason = $"Gateway error: {e.Message}";
             payment.UpdatedAt = DateTime.UtcNow;
             await _dbContext.SaveChangesAsync();
             throw;
         }
 
         payment.ProviderPaymentId = result.ProviderPaymentId;
-        payment.Status = result.Success ? PaymentStatus.Completed : PaymentStatus.Failed;
-        payment.FailureReason = result.ErrorMessage;
         payment.UpdatedAt = DateTime.UtcNow;
-        payment.CompletedAt = result.Success ? DateTime.UtcNow : null;
-        
+
+        if (result.Success)
+        {
+            payment.Status = PaymentStatus.Completed;
+            payment.CompletedAt = DateTime.UtcNow;
+            _logger.LogInformation(
+                "Payment {PaymentId} completed successfully",
+                payment.Id);
+        }
+        else
+        {
+            payment.Status = PaymentStatus.Failed;
+            payment.FailureReason = result.ErrorMessage;
+
+            // Handle specific decline reasons
+            if (result.ErrorMessage?.Contains("Insufficient funds", StringComparison.OrdinalIgnoreCase) == true)
+            {
+                _logger.LogWarning(
+                    "Payment {PaymentId} declined due to insufficient funds for user {UserId}. Amount: {Amount} {Currency}",
+                    payment.Id, payment.UserId, payment.Amount, payment.Currency);
+            }
+        }
+
         await _dbContext.SaveChangesAsync();
-        
-        _logger.LogInformation(
-            "Payment {PaymentId} completed with status {Status}",
-            payment.Id, payment.Status.ToString());
-        
+
         return MapToPresponse(payment);
     }
 
@@ -129,6 +155,7 @@ public class PaymentService: IPaymentService
             Amount = payment.Amount,
             Currency = payment.Currency,
             Status = payment.Status.ToString().ToLower(),
+            Message = payment.FailureReason,
             CreatedAt = payment.CreatedAt,
             CompletedAt = payment.CompletedAt
         };
