@@ -22,7 +22,7 @@ public class StripeGateway: IPaymentGateway
             {
                 Amount = (long)(request.Amount*100), //Stripe uses cents
                 Currency = request.Currency.ToLower(),
-                Source = "tok_visa",
+                Source = request.PaymentToken,
                 Description = $"Payment via {ProviderName}",
             };
             var charge = await _chargeService.CreateAsync(options);
