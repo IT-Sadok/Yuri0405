@@ -66,7 +66,8 @@ public class PaymentService: IPaymentService
         {
             Amount = payment.Amount,
             Currency = payment.Currency,
-            IdempotencyKey = idempotencyKey
+            IdempotencyKey = idempotencyKey,
+            PaymentToken = paymentRequest.PaymentToken
         };
         GatewayResponse result;
         try

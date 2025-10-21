@@ -8,4 +8,5 @@ public class PaymentRequest
     public decimal Amount { get; set; }
     public string Currency { get; set; } // "USD", "EUR"
     public short ProviderId { get; set; }
+    public string? PaymentToken { get; set; }
 }
