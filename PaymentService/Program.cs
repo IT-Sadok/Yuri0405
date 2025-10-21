@@ -14,6 +14,7 @@ public class Program
         // Add services to the container.
         builder.Services.AddControllers();
         builder.Services.AddScoped<MockGateway>();
+        builder.Services.AddScoped<StripeGateway>();
         builder.Services.AddScoped<IPaymentGatewayFactory, PaymentGatewayFactory>();
         builder.Services.AddDbContext<PaymentDbContext>(options =>
             options.UseInMemoryDatabase("PaymentsDb"));

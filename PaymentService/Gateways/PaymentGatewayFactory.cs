@@ -10,8 +10,11 @@ public class PaymentGatewayFactory: IPaymentGatewayFactory
     }
     public IPaymentGateway GetGateway(short providerId)
     {
-        if (providerId == 3)
-            return _serviceProvider.GetRequiredService<MockGateway>();
-        throw new ArgumentException($"Unknown provider: {providerId}");
+        return providerId switch
+        {
+            1 => _serviceProvider.GetRequiredService<StripeGateway>(),
+            3 => _serviceProvider.GetRequiredService<MockGateway>(),
+            _ => throw new ArgumentException($"Unknown provider: {providerId}")
+        };
     }
 }
