@@ -33,7 +33,8 @@ PaymentService/
 │   ├── IPaymentGateway.cs            # Payment gateway interface
 │   ├── IPaymentGatewayFactory.cs     # Gateway factory interface
 │   ├── PaymentGatewayFactory.cs      # Gateway factory implementation
-│   └── MockGateway.cs                # Mock payment gateway for testing
+│   ├── MockGateway.cs                # Mock payment gateway for testing
+│   └── StripeGateway.cs              # Stripe payment gateway integration
 ├── Models/
 │   ├── DTOs/
 │   │   ├── PaymentRequest.cs         # Payment creation request DTO
@@ -65,7 +66,8 @@ Process a new payment transaction.
   "productId": "guid",
   "amount": 100.00,
   "currency": "USD",
-  "providerId": 1
+  "providerId": 1,
+  "paymentToken":"tok_visa"
 }
 ```
 
