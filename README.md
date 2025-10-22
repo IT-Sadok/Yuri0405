@@ -117,6 +117,46 @@ When running in Development mode, access the Swagger UI at:
 ```
 http://localhost:5238/swagger
 ```
+### Secrets
+
+The application requires sensitive configuration for payment gateway integrations. Stripe requests use the following configuration structure:
+
+```json
+"Gateways": {
+    "Stripe": {
+      "SecretKey": ""
+    }
+}
+```
+
+To securely store your Stripe API key during development, use the `dotnet user-secrets` command instead of storing it directly in `appsettings.json`:
+
+#### Setting up Stripe Secret Key
+
+1. **Initialize user secrets** (if not already initialized):
+   ```bash
+   cd PaymentService
+   dotnet user-secrets init
+   ```
+
+2. **Set the Stripe Secret Key**:
+   ```bash
+   dotnet user-secrets set "Gateways:Stripe:SecretKey" "sk_test_your_stripe_secret_key_here"
+   ```
+
+   Replace `sk_test_your_stripe_secret_key_here` with your actual Stripe secret key from the [Stripe Dashboard](https://dashboard.stripe.com/apikeys).
+
+3. **Verify the secret was set**:
+   ```bash
+   dotnet user-secrets list
+   ```
+
+4. **Remove a secret** (if needed):
+   ```bash
+   dotnet user-secrets remove "Gateways:Stripe:SecretKey"
+   ```
+
+**Note**: User secrets are stored locally on your development machine and are not checked into source control. For production deployments, use environment variables or a secure secrets management service like Azure Key Vault, AWS Secrets Manager, or similar
 
 ### Configuration
 
