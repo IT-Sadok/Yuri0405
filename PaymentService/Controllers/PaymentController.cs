@@ -20,21 +20,17 @@ public class PaymentController:ControllerBase
     }
 
     [HttpPost]
+    [RequiredHeader("Idempotency-Key")]
     public async Task<IActionResult> CreatePayment(
-        [FromBody] PaymentRequest request,
-        [FromHeader(Name = "Idempotency-Key")] string idempotencyKey)
+        [FromHeader(Name = "Idempotency-Key")] string idempotencyKey,
+        [FromBody] PaymentRequest request)
     {
-        if (string.IsNullOrWhiteSpace(idempotencyKey))
-        {
-            return BadRequest(new { error = "Idempotency-Key header is required" });
-        }
-
         try
         {
-            var resposne = await _paymentService.ProcessPaymentAsync(request, idempotencyKey);
-            if (resposne.Status == "failed")
-                return StatusCode(402, new { error = resposne.Message });
-            return Ok(resposne);
+            var response = await _paymentService.ProcessPaymentAsync(request, idempotencyKey);
+            if (response.Status == "failed")
+                return StatusCode(402, new { error = response.Message });
+            return Ok(response);
         }
         catch (ArgumentException ex)
         {
