@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using PaymentService.Data;
 using PaymentService.Gateways;
+using PaymentService.Helpers;
 using PaymentService.Services;
 
 namespace PaymentService;
@@ -13,6 +14,8 @@ public class Program
 
         // Add services to the container.
         builder.Services.AddControllers();
+        builder.Services.AddExceptionHandler<PaymentExceptionHandler>();
+        builder.Services.AddProblemDetails();
         builder.Services.AddScoped<MockGateway>();
         builder.Services.AddScoped<StripeGateway>();
         builder.Services.AddScoped<IPaymentGatewayFactory, PaymentGatewayFactory>();
@@ -27,6 +30,7 @@ public class Program
 
         var app = builder.Build();
 
+        app.UseExceptionHandler();
         app.MapControllers();
         // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment())
