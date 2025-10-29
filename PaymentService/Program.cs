@@ -1,8 +1,4 @@
-using Microsoft.EntityFrameworkCore;
-using PaymentService.Data;
-using PaymentService.Gateways;
-using PaymentService.Helpers;
-using PaymentService.Services;
+using PaymentService.Extentions;
 
 namespace PaymentService;
 
@@ -13,20 +9,11 @@ public class Program
         var builder = WebApplication.CreateBuilder(args);
 
         // Add services to the container.
-        builder.Services.AddControllers();
-        builder.Services.AddExceptionHandler<PaymentExceptionHandler>();
-        builder.Services.AddProblemDetails();
-        builder.Services.AddScoped<MockGateway>();
-        builder.Services.AddScoped<StripeGateway>();
-        builder.Services.AddScoped<IPaymentGatewayFactory, PaymentGatewayFactory>();
-        builder.Services.AddDbContext<PaymentDbContext>(options =>
-            options.UseInMemoryDatabase("PaymentsDb"));
-        builder.Services.AddScoped<IPaymentService, Services.PaymentService>();
-        builder.Services.AddAuthorization();
+        builder.Services.AddApplicationServices();
+        builder.Services.AddPaymentDatabase();
 
         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-        builder.Services.AddEndpointsApiExplorer();
-        builder.Services.AddSwaggerGen();
+        builder.Services.AddSwaggerDocumentation();
 
         var app = builder.Build();
 
