@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PaymentService.Data;
+using PaymentService.Extentions;
 using PaymentService.Gateways;
 using PaymentService.Models.DTOs;
 using PaymentService.Models.Entities;
@@ -31,7 +32,7 @@ public class PaymentService: IPaymentService
         {
             _logger.LogInformation(
                 "Returning cached payment for idempotency key {Key}",idempotencyKey);
-            return MapToPresponse(existing);
+            return existing.ToResponse();
         }
         
         //Create and save payment before calling gateway
@@ -124,7 +125,7 @@ public class PaymentService: IPaymentService
 
         await _dbContext.SaveChangesAsync();
 
-        return MapToPresponse(payment);
+        return payment.ToResponse();
     }
 
     public async Task<PaymentResponse> GetPaymentAsync(Guid paymentId)
@@ -133,7 +134,7 @@ public class PaymentService: IPaymentService
             .FirstOrDefaultAsync(p => p.Id == paymentId);
         if (payment == null)
             throw new KeyNotFoundException($"Payment {paymentId} not found");
-        return MapToPresponse(payment);
+        return payment.ToResponse();
     }
 
     public async Task<IEnumerable<PaymentResponse>> GetAllPaymentsAsync()
@@ -142,23 +143,6 @@ public class PaymentService: IPaymentService
             .OrderByDescending(p => p.CreatedAt)
             .ToListAsync();
 
-        return payments.Select(MapToPresponse);
-    }
-
-    private PaymentResponse MapToPresponse( Payment payment)
-    {
-        return new PaymentResponse
-        {
-            Id = payment.Id,
-            IdempotencyKey = payment.IdempotencyKey,
-            UserId = payment.UserId,
-            PurchaseId = payment.PurchaseId,
-            Amount = payment.Amount,
-            Currency = payment.Currency,
-            Status = payment.Status.ToString().ToLower(),
-            Message = payment.FailureReason,
-            CreatedAt = payment.CreatedAt,
-            CompletedAt = payment.CompletedAt
-        };
+        return payments.Select(p => p.ToResponse());
     }
 }
