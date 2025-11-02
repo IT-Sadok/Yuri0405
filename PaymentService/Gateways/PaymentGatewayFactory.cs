@@ -1,3 +1,5 @@
+using PaymentService.Models.Enums;
+
 namespace PaymentService.Gateways;
 
 public class PaymentGatewayFactory: IPaymentGatewayFactory
@@ -8,13 +10,13 @@ public class PaymentGatewayFactory: IPaymentGatewayFactory
     {
         _serviceProvider = serviceProvider;
     }
-    public IPaymentGateway GetGateway(short providerId)
+    public IPaymentGateway GetGateway(PaymentProvider provider)
     {
-        return providerId switch
+        return provider switch
         {
-            1 => _serviceProvider.GetRequiredService<StripeGateway>(),
-            3 => _serviceProvider.GetRequiredService<MockGateway>(),
-            _ => throw new ArgumentException($"Unknown provider: {providerId}")
+            PaymentProvider.Stripe => _serviceProvider.GetRequiredService<StripeGateway>(),
+            PaymentProvider.Mock => _serviceProvider.GetRequiredService<MockGateway>(),
+            _ => throw new ArgumentException($"Unknown provider: {provider}")
         };
     }
 }

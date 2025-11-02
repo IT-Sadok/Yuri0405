@@ -13,7 +13,7 @@ public class Payment
     public decimal Amount { get; set; }
     public string Currency { get; set; } = string.Empty;
     //Provider info
-    public short ProviderId { get; set; }
+    public PaymentProvider ProviderId { get; set; }
     public string? ProviderPaymentId { get; set; }
     //Status
     public PaymentStatus Status { get; set; } = PaymentStatus.Pending;

@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using PaymentService.Data;
 using PaymentService.Gateways;
@@ -10,7 +11,12 @@ public static class ServiceCollectionExtentions
 {
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
-        services.AddControllers();
+        services.AddControllers()
+        .AddJsonOptions(options =>
+        {
+            options.JsonSerializerOptions.Converters.Add(
+                new JsonStringEnumConverter());
+        });
         services.AddExceptionHandler<PaymentExceptionHandler>();
         services.AddProblemDetails();
         services.AddScoped<MockGateway>();

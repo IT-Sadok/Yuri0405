@@ -44,7 +44,7 @@ public class PaymentService: IPaymentService
             PurchaseId = paymentRequest.ProductId,
             Amount = paymentRequest.Amount,
             Currency = paymentRequest.Currency,
-            ProviderId = paymentRequest.ProviderId,
+            ProviderId = paymentRequest.Provider,
             Status = PaymentStatus.Pending,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
@@ -62,7 +62,7 @@ public class PaymentService: IPaymentService
         payment.UpdatedAt = DateTime.UtcNow;
         await _dbContext.SaveChangesAsync();
 
-        var gateway = _paymentGatewayFactory.GetGateway(paymentRequest.ProviderId);
+        var gateway = _paymentGatewayFactory.GetGateway(paymentRequest.Provider);
         var gatewayRequest = new GatewayChargeRequest
         {
             Amount = payment.Amount,
