@@ -28,10 +28,15 @@ public static class ServiceCollectionExtentions
         return services;
     }
 
-    public static IServiceCollection AddPaymentDatabase(this IServiceCollection services)
+    public static IServiceCollection AddPaymentDatabase(this IServiceCollection services, IConfiguration configuration)
     {
+        // In-memory database (for testing)
+        // services.AddDbContext<PaymentDbContext>(options =>
+        //     options.UseInMemoryDatabase("PaymentsDb"));
+
+        // PostgreSQL database
         services.AddDbContext<PaymentDbContext>(options =>
-            options.UseInMemoryDatabase("PaymentsDb"));
+            options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
 
         return services;
     }
