@@ -56,74 +56,86 @@ public class PaymentService: IPaymentService
         _logger.LogInformation(
             "Created payment {PaymentId} with status {Status}",
             payment.Id, payment.Status.ToString());
-        
-        //Update status to processing and call gateway
-        payment.Status = PaymentStatus.Processing;
-        payment.UpdatedAt = DateTime.UtcNow;
-        await _dbContext.SaveChangesAsync();
 
-        var gateway = _paymentGatewayFactory.GetGateway(paymentRequest.Provider);
-        var gatewayRequest = new GatewayChargeRequest
-        {
-            Amount = payment.Amount,
-            Currency = payment.Currency,
-            IdempotencyKey = idempotencyKey,
-            PaymentToken = paymentRequest.PaymentToken
-        };
-        GatewayResponse result;
+        //Update status to processing and call gateway within a transaction
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync();
         try
         {
-            result = await gateway.ChargeAsync(gatewayRequest);
-        }
-        catch (HttpRequestException e)
-        {
-            _logger.LogError(e,
-                "Network error occurred while processing payment {PaymentId}. This is a transient error that may succeed on retry.",
-                payment.Id);
-            payment.Status = PaymentStatus.Failed;
-            payment.FailureReason = "Network error: Gateway communication failure";
+            payment.Status = PaymentStatus.Processing;
             payment.UpdatedAt = DateTime.UtcNow;
             await _dbContext.SaveChangesAsync();
-            throw;
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e,
-                "Unexpected error occurred while processing payment {PaymentId}",
-                payment.Id);
-            payment.Status = PaymentStatus.Failed;
-            payment.FailureReason = $"Gateway error: {e.Message}";
-            payment.UpdatedAt = DateTime.UtcNow;
-            await _dbContext.SaveChangesAsync();
-            throw;
-        }
 
-        payment.ProviderPaymentId = result.ProviderPaymentId;
-        payment.UpdatedAt = DateTime.UtcNow;
-
-        if (result.Success)
-        {
-            payment.Status = PaymentStatus.Completed;
-            payment.CompletedAt = DateTime.UtcNow;
-            _logger.LogInformation(
-                "Payment {PaymentId} completed successfully",
-                payment.Id);
-        }
-        else
-        {
-            payment.Status = PaymentStatus.Failed;
-            payment.FailureReason = result.ErrorMessage;
-
-            // Handle specific decline reasons
-            if (result.ErrorMessage?.Contains("Insufficient funds", StringComparison.OrdinalIgnoreCase) == true)
+            var gateway = _paymentGatewayFactory.GetGateway(paymentRequest.Provider);
+            var gatewayRequest = new GatewayChargeRequest
             {
-                _logger.LogWarning(
-                    "Payment {PaymentId} declined due to insufficient funds for user {UserId}. Amount: {Amount} {Currency}",
-                    payment.Id, payment.UserId, payment.Amount, payment.Currency);
+                Amount = payment.Amount,
+                Currency = payment.Currency,
+                IdempotencyKey = idempotencyKey,
+                PaymentToken = paymentRequest.PaymentToken
+            };
+            GatewayResponse result;
+            try
+            {
+                result = await gateway.ChargeAsync(gatewayRequest);
             }
-        }
+            catch (HttpRequestException e)
+            {
+                _logger.LogError(e,
+                    "Network error occurred while processing payment {PaymentId}. This is a transient error that may succeed on retry.",
+                    payment.Id);
+                payment.Status = PaymentStatus.Failed;
+                payment.FailureReason = "Network error: Gateway communication failure";
+                payment.UpdatedAt = DateTime.UtcNow;
+                await _dbContext.SaveChangesAsync();
+                await transaction.CommitAsync();
+                throw;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e,
+                    "Unexpected error occurred while processing payment {PaymentId}",
+                    payment.Id);
+                payment.Status = PaymentStatus.Failed;
+                payment.FailureReason = $"Gateway error: {e.Message}";
+                payment.UpdatedAt = DateTime.UtcNow;
+                await _dbContext.SaveChangesAsync();
+                await transaction.CommitAsync();
+                throw;
+            }
 
-        await _dbContext.SaveChangesAsync();
+            payment.ProviderPaymentId = result.ProviderPaymentId;
+            payment.UpdatedAt = DateTime.UtcNow;
+
+            if (result.Success)
+            {
+                payment.Status = PaymentStatus.Completed;
+                payment.CompletedAt = DateTime.UtcNow;
+                _logger.LogInformation(
+                    "Payment {PaymentId} completed successfully",
+                    payment.Id);
+            }
+            else
+            {
+                payment.Status = PaymentStatus.Failed;
+                payment.FailureReason = result.ErrorMessage;
+
+                // Handle specific decline reasons
+                if (result.ErrorMessage?.Contains("Insufficient funds", StringComparison.OrdinalIgnoreCase) == true)
+                {
+                    _logger.LogWarning(
+                        "Payment {PaymentId} declined due to insufficient funds for user {UserId}. Amount: {Amount} {Currency}",
+                        payment.Id, payment.UserId, payment.Amount, payment.Currency);
+                }
+            }
+
+            await _dbContext.SaveChangesAsync();
+            await transaction.CommitAsync();
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
 
         return payment.ToResponse();
     }
