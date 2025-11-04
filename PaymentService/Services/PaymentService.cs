@@ -83,24 +83,13 @@ public class PaymentService: IPaymentService
                 _logger.LogError(e,
                     "Network error occurred while processing payment {PaymentId}. This is a transient error that may succeed on retry.",
                     payment.Id);
-                payment.Status = PaymentStatus.Failed;
-                payment.FailureReason = "Network error: Gateway communication failure";
-                payment.UpdatedAt = DateTime.UtcNow;
-                await _dbContext.SaveChangesAsync();
-                await transaction.CommitAsync();
-                throw;
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e,
-                    "Unexpected error occurred while processing payment {PaymentId}",
-                    payment.Id);
-                payment.Status = PaymentStatus.Failed;
-                payment.FailureReason = $"Gateway error: {e.Message}";
-                payment.UpdatedAt = DateTime.UtcNow;
-                await _dbContext.SaveChangesAsync();
-                await transaction.CommitAsync();
-                throw;
+
+                result = new GatewayResponse
+                {
+                    Success = false,
+                    ProviderPaymentId = null,
+                    ErrorMessage = "Network error: Gateway communication failure. Please retry."
+                };
             }
 
             payment.ProviderPaymentId = result.ProviderPaymentId;
@@ -130,14 +119,18 @@ public class PaymentService: IPaymentService
 
             await _dbContext.SaveChangesAsync();
             await transaction.CommitAsync();
+            return payment.ToResponse();
         }
-        catch
+        catch (Exception ex)
         {
             await transaction.RollbackAsync();
+            await _dbContext.Entry(payment).ReloadAsync();
+            payment.Status = PaymentStatus.Failed;
+            payment.FailureReason = $"System error: {ex.Message}";
+            payment.UpdatedAt = DateTime.UtcNow;
+            await _dbContext.SaveChangesAsync();
             throw;
         }
-
-        return payment.ToResponse();
     }
 
     public async Task<PaymentResponse> GetPaymentAsync(Guid paymentId)
