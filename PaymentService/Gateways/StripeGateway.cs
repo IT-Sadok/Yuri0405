@@ -30,7 +30,6 @@ public class StripeGateway: IPaymentGateway
             {
                 Success = charge.Status == "succeeded",
                 ProviderPaymentId = charge.Id,
-                Status = charge.Status,
                 ErrorMessage = charge.FailureMessage
             };
         }
@@ -41,7 +40,6 @@ public class StripeGateway: IPaymentGateway
             {
                 Success = false,
                 ErrorMessage = ex.Message,
-                Status = "failed"
             };
         }
         catch (Exception ex)

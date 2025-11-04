@@ -24,7 +24,6 @@ public class MockGateway: IPaymentGateway
             {
                 Success = false,
                 ErrorMessage = "Insufficient funds",
-                Status = "declined"
             });
         }
 
@@ -33,7 +32,6 @@ public class MockGateway: IPaymentGateway
         {
             Success = true,
             ProviderPaymentId = $"mock_{Guid.NewGuid()}",
-            Status = "succeeded"
         });
             
     }
