@@ -6,7 +6,7 @@ public class MockGateway: IPaymentGateway
 {
     public string ProviderName =>  "mock";
 
-    public Task<GatewayResponse> ChargeAsync(GatewayChargeRequest paymentRequest)
+    public Task<GatewayResponse> CreatePaymentSessionAsync(GatewayChargeRequest request)
     {
         // Simulate success 90% of the time
         var random = Random.Shared.Next(100);
@@ -14,26 +14,27 @@ public class MockGateway: IPaymentGateway
         // 10% connection errors (throw exception)
         if (random < 10)
         {
-            throw new HttpRequestException("Connection to gateway failed");
+            throw new HttpRequestException("Mock gateway connection failed");
         }
 
-        // 20% declined payments (return failure response)
+        // 20% session creation failures (return failure response)
         if (random < 30)
         {
             return Task.FromResult(new GatewayResponse
             {
                 Success = false,
-                ErrorMessage = "Insufficient funds",
+                ErrorMessage = "Mock payment session creation failed: Invalid request parameters",
             });
         }
 
-            // 70% successful payments
+        // 70% successful session creation
+        var sessionId = $"mock_session_{Guid.NewGuid()}";
         return Task.FromResult(new GatewayResponse
         {
             Success = true,
-            ProviderPaymentId = $"mock_{Guid.NewGuid()}",
+            ProviderPaymentId = sessionId,
+            RedirectUrl = $"http://localhost:5000/mock-checkout/{sessionId}",
         });
-            
     }
 
     public Task<GatewayResponse> RefundAsync(string providerPaymentId, decimal amount)

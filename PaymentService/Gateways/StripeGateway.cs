@@ -1,41 +1,69 @@
 using PaymentService.Models.DTOs;
 using Stripe;
+using Stripe.Checkout;
 namespace PaymentService.Gateways;
 
 public class StripeGateway: IPaymentGateway
 {
-    private readonly ChargeService _chargeService;
-    
+    private readonly SessionService _sessionService;
+
     public string ProviderName => "stripe";
 
     public StripeGateway(IConfiguration configuration)
     {
-        _chargeService = new ChargeService();
+        _sessionService = new SessionService();
         StripeConfiguration.ApiKey = configuration["Gateways:Stripe:SecretKey"];
     }
 
-    public async Task<GatewayResponse> ChargeAsync(GatewayChargeRequest request)
+    public Task<GatewayResponse> RefundAsync(string providerPaymentId, decimal amount)
+    {
+        throw new NotImplementedException();
+    }
+
+    public async Task<GatewayResponse> CreatePaymentSessionAsync(GatewayChargeRequest request)
     {
         try
         {
-            var options = new ChargeCreateOptions
+            var options = new SessionCreateOptions
             {
-                Amount = (long)(request.Amount*100), //Stripe uses cents
-                Currency = request.Currency.ToLower(),
-                Source = request.PaymentToken,
-                Description = $"Payment via {ProviderName}",
+                PaymentMethodTypes = new List<string> { "card" },
+                LineItems = new List<SessionLineItemOptions>
+                {
+                    new SessionLineItemOptions
+                    {
+                        PriceData = new SessionLineItemPriceDataOptions
+                        {
+                            Currency = request.Currency.ToLower(),
+                            UnitAmount = (long)(request.Amount * 100), // Stripe uses cents
+                            ProductData = new SessionLineItemPriceDataProductDataOptions
+                            {
+                                Name = $"Payment via {ProviderName}",
+                            },
+                        },
+                        Quantity = 1,
+                    },
+                },
+                Mode = "payment",
+                SuccessUrl = "https://example.com/success",
+                CancelUrl = "https://example.com/cancel",
             };
-            var charge = await _chargeService.CreateAsync(options);
+
+            var requestOptions = new RequestOptions
+            {
+                IdempotencyKey = request.IdempotencyKey
+            };
+
+            var session = await _sessionService.CreateAsync(options, requestOptions);
+
             return new GatewayResponse
             {
-                Success = charge.Status == "succeeded",
-                ProviderPaymentId = charge.Id,
-                ErrorMessage = charge.FailureMessage
+                Success = true,
+                ProviderPaymentId = session.Id,
+                RedirectUrl = session.Url,
             };
         }
         catch (StripeException ex)
         {
-            // Card declined, invalid request, etc.
             return new GatewayResponse
             {
                 Success = false,
@@ -44,13 +72,7 @@ public class StripeGateway: IPaymentGateway
         }
         catch (Exception ex)
         {
-            // Network errors - let them bubble up for retry logic
             throw new HttpRequestException("Stripe connection failed", ex);
         }
-    }
-    
-    public Task<GatewayResponse> RefundAsync(string providerPaymentId, decimal amount)
-    {
-        throw new NotImplementedException();
     }
 }
