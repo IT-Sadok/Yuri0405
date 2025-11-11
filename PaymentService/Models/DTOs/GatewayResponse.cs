@@ -4,5 +4,6 @@ public class GatewayResponse
 {
     public bool Success { get; set; }
     public string? ProviderPaymentId { get; set; }
+    public string? RedirectUrl { get; set; }
     public string? ErrorMessage { get; set; }
 }

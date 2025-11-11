@@ -23,7 +23,7 @@ public class PaymentService: IPaymentService
         _dbContext = dbContext;
     }
 
-    public async Task<PaymentResponse> ProcessPaymentAsync(PaymentRequest paymentRequest, string idempotencyKey)
+    public async Task<PaymentSessionResponse> ProcessPaymentAsync(PaymentRequest paymentRequest, string idempotencyKey)
     {
         //Checking existing payment
         var existing = await _dbContext.Payments
@@ -32,103 +32,65 @@ public class PaymentService: IPaymentService
         {
             _logger.LogInformation(
                 "Returning cached payment for idempotency key {Key}",idempotencyKey);
-            return existing.ToResponse();
+            // TODO: Return existing session URL if available
+            throw new InvalidOperationException("Payment already exists for this idempotency key");
         }
-        
-        //Create and save payment before calling gateway
-        var payment = new Payment
+
+        // Get gateway and create payment session first (outside of transaction)
+        var gateway = _paymentGatewayFactory.GetGateway(paymentRequest.Provider);
+        var gatewayRequest = new GatewayChargeRequest
         {
-            Id = Guid.NewGuid(),
-            IdempotencyKey = idempotencyKey,
-            UserId = paymentRequest.UserId,
-            PurchaseId = paymentRequest.ProductId,
             Amount = paymentRequest.Amount,
             Currency = paymentRequest.Currency,
-            ProviderId = paymentRequest.Provider,
-            Status = PaymentStatus.Pending,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
+            IdempotencyKey = idempotencyKey,
         };
-        
-        await _dbContext.Payments.AddAsync(payment);
-        await _dbContext.SaveChangesAsync();
-        
-        _logger.LogInformation(
-            "Created payment {PaymentId} with status {Status}",
-            payment.Id, payment.Status.ToString());
 
-        //Update status to processing and call gateway within a transaction
+        var gatewayResponse = await gateway.CreatePaymentSessionAsync(gatewayRequest);
+
+        if (!gatewayResponse.Success)
+        {
+            _logger.LogError("Payment session creation failed: {ErrorMessage}", gatewayResponse.ErrorMessage);
+            throw new InvalidOperationException($"Payment session creation failed: {gatewayResponse.ErrorMessage}");
+        }
+
+        // Now create the database record with the session ID
         await using var transaction = await _dbContext.Database.BeginTransactionAsync();
         try
         {
-            payment.Status = PaymentStatus.Processing;
-            payment.UpdatedAt = DateTime.UtcNow;
-            await _dbContext.SaveChangesAsync();
-
-            var gateway = _paymentGatewayFactory.GetGateway(paymentRequest.Provider);
-            var gatewayRequest = new GatewayChargeRequest
+            var payment = new Payment
             {
-                Amount = payment.Amount,
-                Currency = payment.Currency,
+                Id = Guid.NewGuid(),
                 IdempotencyKey = idempotencyKey,
-                PaymentToken = paymentRequest.PaymentToken
+                UserId = paymentRequest.UserId,
+                PurchaseId = paymentRequest.ProductId,
+                Amount = paymentRequest.Amount,
+                Currency = paymentRequest.Currency,
+                ProviderId = paymentRequest.Provider,
+                ProviderPaymentId = gatewayResponse.ProviderPaymentId,
+                Status = PaymentStatus.Processing,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
             };
-            GatewayResponse result;
-            try
-            {
-                result = await gateway.ChargeAsync(gatewayRequest);
-            }
-            catch (HttpRequestException e)
-            {
-                _logger.LogError(e,
-                    "Network error occurred while processing payment {PaymentId}. This is a transient error that may succeed on retry.",
-                    payment.Id);
 
-                result = new GatewayResponse
-                {
-                    Success = false,
-                    ProviderPaymentId = null,
-                    ErrorMessage = "Network error: Gateway communication failure. Please retry."
-                };
-            }
-
-            payment.ProviderPaymentId = result.ProviderPaymentId;
-            payment.UpdatedAt = DateTime.UtcNow;
-
-            if (result.Success)
-            {
-                payment.Status = PaymentStatus.Completed;
-                payment.CompletedAt = DateTime.UtcNow;
-                _logger.LogInformation(
-                    "Payment {PaymentId} completed successfully",
-                    payment.Id);
-            }
-            else
-            {
-                payment.Status = PaymentStatus.Failed;
-                payment.FailureReason = result.ErrorMessage;
-
-                // Handle specific decline reasons
-                if (result.ErrorMessage?.Contains("Insufficient funds", StringComparison.OrdinalIgnoreCase) == true)
-                {
-                    _logger.LogWarning(
-                        "Payment {PaymentId} declined due to insufficient funds for user {UserId}. Amount: {Amount} {Currency}",
-                        payment.Id, payment.UserId, payment.Amount, payment.Currency);
-                }
-            }
-
+            await _dbContext.Payments.AddAsync(payment);
             await _dbContext.SaveChangesAsync();
             await transaction.CommitAsync();
-            return payment.ToResponse();
+
+            _logger.LogInformation(
+                "Created payment {PaymentId} with session {SessionId}",
+                payment.Id, gatewayResponse.ProviderPaymentId);
+
+            return new PaymentSessionResponse
+            {
+                PaymentId = payment.Id,
+                PaymentUrl = gatewayResponse.RedirectUrl ?? string.Empty,
+                Status = payment.Status.ToString().ToLower()
+            };
         }
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
-            await _dbContext.Entry(payment).ReloadAsync();
-            payment.Status = PaymentStatus.Failed;
-            payment.FailureReason = $"System error: {ex.Message}";
-            payment.UpdatedAt = DateTime.UtcNow;
-            await _dbContext.SaveChangesAsync();
+            _logger.LogError(ex, "Error saving payment record for session {SessionId}", gatewayResponse.ProviderPaymentId);
             throw;
         }
     }
