@@ -38,15 +38,30 @@ public class WebHookStripeHelper : IWebHookHelper
             return;
         }
 
-        payment.Status = PaymentStatus.Completed;
-        payment.CompletedAt = DateTime.UtcNow;
-        payment.UpdatedAt = DateTime.UtcNow;
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync();
 
-        await _dbContext.SaveChangesAsync();
+        try
+        {
+            payment.Status = PaymentStatus.Completed;
+            payment.FailureReason = null;
+            payment.CompletedAt = DateTime.UtcNow;
+            payment.UpdatedAt = DateTime.UtcNow;
 
-        _logger.LogInformation(
-            "Payment {PaymentId} marked as completed for session {SessionId}",
-            payment.Id, session.Id);
+            await _dbContext.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            _logger.LogInformation(
+                "Payment {PaymentId} marked as completed for session {SessionId}",
+                payment.Id, session.Id);
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            _logger.LogError(ex,
+                "Error updating payment {PaymentId} for session {SessionId}",
+                payment.Id, session.Id);
+            throw;
+        }
     }
 
     public async Task HandleCheckoutSessionExpired(Session? session)
@@ -68,27 +83,63 @@ public class WebHookStripeHelper : IWebHookHelper
             return;
         }
 
-        payment.Status = PaymentStatus.Failed;
-        payment.FailureReason = "Checkout session expired";
-        payment.UpdatedAt = DateTime.UtcNow;
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync();
 
-        await _dbContext.SaveChangesAsync();
+        try
+        {
+            payment.Status = PaymentStatus.Failed;
+            payment.FailureReason = "Checkout session expired";
+            payment.UpdatedAt = DateTime.UtcNow;
 
-        _logger.LogInformation(
-            "Payment {PaymentId} marked as failed (expired) for session {SessionId}",
-            payment.Id, session.Id);
+            await _dbContext.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            _logger.LogInformation(
+                "Payment {PaymentId} marked as failed (expired) for session {SessionId}",
+                payment.Id, session.Id);
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            _logger.LogError(ex,
+                "Error updating payment {PaymentId} for session {SessionId}",
+                payment.Id, session.Id);
+            throw;
+        }
     }
 
     public async Task HandlePaymentIntentFailed(PaymentIntent? paymentIntent)
     {
         if (paymentIntent == null) return;
 
+        // Retrieve the checkout session using the payment intent ID (outside transaction)
+        var sessionService = new SessionService();
+        var listOptions = new SessionListOptions
+        {
+            PaymentIntent = paymentIntent.Id,
+            Limit = 1
+        };
+
+        var sessions = await sessionService.ListAsync(listOptions);
+        var session = sessions.Data.FirstOrDefault();
+
+        if (session == null)
+        {
+            _logger.LogWarning(
+                "Checkout session not found for PaymentIntent {PaymentIntentId}",
+                paymentIntent.Id);
+            return;
+        }
+
+        // Find the local payment record using the checkout session ID
         var payment = await _dbContext.Payments
-            .FirstOrDefaultAsync(p => p.ProviderPaymentId == paymentIntent.Id);
+            .FirstOrDefaultAsync(p => p.ProviderPaymentId == session.Id);
 
         if (payment == null)
         {
-            _logger.LogWarning("Payment not found for PaymentIntent {PaymentIntentId}", paymentIntent.Id);
+            _logger.LogWarning(
+                "Payment not found for session {SessionId} (PaymentIntent {PaymentIntentId})",
+                session.Id, paymentIntent.Id);
             return;
         }
 
@@ -98,14 +149,28 @@ public class WebHookStripeHelper : IWebHookHelper
             return;
         }
 
-        payment.Status = PaymentStatus.Failed;
-        payment.FailureReason = paymentIntent.LastPaymentError?.Message ?? "Payment failed";
-        payment.UpdatedAt = DateTime.UtcNow;
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync();
 
-        await _dbContext.SaveChangesAsync();
+        try
+        {
+            payment.Status = PaymentStatus.Failed;
+            payment.FailureReason = paymentIntent.LastPaymentError?.Message ?? "Payment failed";
+            payment.UpdatedAt = DateTime.UtcNow;
 
-        _logger.LogInformation(
-            "Payment {PaymentId} marked as failed for PaymentIntent {PaymentIntentId}. Reason: {Reason}",
-            payment.Id, paymentIntent.Id, payment.FailureReason);
+            await _dbContext.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            _logger.LogInformation(
+                "Payment {PaymentId} marked as failed for session {SessionId} (PaymentIntent {PaymentIntentId}). Reason: {Reason}",
+                payment.Id, session.Id, paymentIntent.Id, payment.FailureReason);
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            _logger.LogError(ex,
+                "Error updating payment {PaymentId} for session {SessionId} (PaymentIntent {PaymentIntentId})",
+                payment.Id, session.Id, paymentIntent.Id);
+            throw;
+        }
     }
 }
