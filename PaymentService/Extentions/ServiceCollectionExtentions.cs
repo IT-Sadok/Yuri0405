@@ -23,6 +23,7 @@ public static class ServiceCollectionExtentions
         services.AddScoped<StripeGateway>();
         services.AddScoped<IPaymentGatewayFactory, PaymentGatewayFactory>();
         services.AddScoped<IPaymentService, Services.PaymentService>();
+        services.AddScoped<IWebHookHelper, WebHookStripeHelper>();
         services.AddAuthorization();
 
         return services;
