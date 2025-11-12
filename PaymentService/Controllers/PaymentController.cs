@@ -26,8 +26,6 @@ public class PaymentController:ControllerBase
         [FromBody] PaymentRequest request)
     {
         var response = await _paymentService.ProcessPaymentAsync(request, idempotencyKey);
-        if (response.Status == "failed")
-            return StatusCode(402, new { error = response.Message });
         return Ok(response);
     }
 
