@@ -31,9 +31,34 @@ public class PaymentService: IPaymentService
         if (existing != null)
         {
             _logger.LogInformation(
-                "Returning cached payment for idempotency key {Key}",idempotencyKey);
-            // TODO: Return existing session URL if available
-            throw new InvalidOperationException("Payment already exists for this idempotency key");
+                "Found existing payment for idempotency key {Key}, retrieving session from provider",
+                idempotencyKey);
+
+            // Get gateway and retrieve the existing session using the same idempotency key
+            var existingGateway = _paymentGatewayFactory.GetGateway(existing.ProviderId);
+            var existingGatewayRequest = new GatewayChargeRequest
+            {
+                Amount = existing.Amount,
+                Currency = existing.Currency,
+                IdempotencyKey = idempotencyKey,
+            };
+
+            var existingGatewayResponse = await existingGateway.CreatePaymentSessionAsync(existingGatewayRequest);
+
+            if (!existingGatewayResponse.Success)
+            {
+                _logger.LogError(
+                    "Failed to retrieve existing session {SessionId}: {ErrorMessage}",
+                    existing.ProviderPaymentId, existingGatewayResponse.ErrorMessage);
+                throw new InvalidOperationException($"Failed to retrieve payment session: {existingGatewayResponse.ErrorMessage}");
+            }
+
+            return new PaymentSessionResponse
+            {
+                PaymentId = existing.Id,
+                PaymentUrl = existingGatewayResponse.RedirectUrl ?? string.Empty,
+                Status = existing.Status.ToString().ToLower()
+            };
         }
 
         // Get gateway and create payment session first (outside of transaction)
