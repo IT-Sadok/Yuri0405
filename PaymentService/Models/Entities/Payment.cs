@@ -11,7 +11,7 @@ public class Payment
     public Guid? PurchaseId { get; set; }
     //Payment details
     public decimal Amount { get; set; }
-    public string Currency { get; set; } = string.Empty;
+    public Currency Currency { get; set; }
     //Provider info
     public PaymentProvider ProviderId { get; set; }
     public string? ProviderPaymentId { get; set; }

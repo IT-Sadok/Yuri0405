@@ -21,6 +21,7 @@ public class PaymentConfigurations : IEntityTypeConfiguration<Payment>
 
         entity.Property(e => e.Currency)
             .IsRequired()
+            .HasConversion<string>()
             .HasMaxLength(3);
 
         entity.Property(e => e.ProviderPaymentId)

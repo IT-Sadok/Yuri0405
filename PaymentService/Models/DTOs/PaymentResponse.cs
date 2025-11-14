@@ -1,3 +1,5 @@
+using PaymentService.Models.Enums;
+
 namespace PaymentService.Models.DTOs;
 
 public class PaymentResponse
@@ -7,7 +9,7 @@ public class PaymentResponse
     public Guid UserId { get; set; }
     public Guid? PurchaseId { get; set; }
     public decimal Amount { get; set; }
-    public string Currency { get; set; }
+    public Currency Currency { get; set; }
     public string Provider { get; set; }
     public string Status { get; set; } // "pending", "completed", "failed"
     public string? Message { get; set; }

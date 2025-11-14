@@ -33,7 +33,7 @@ public class StripeGateway: IPaymentGateway
                     {
                         PriceData = new SessionLineItemPriceDataOptions
                         {
-                            Currency = request.Currency.ToLower(),
+                            Currency = request.Currency.ToString().ToLower(),
                             UnitAmount = (long)(request.Amount * 100), // Stripe uses cents
                             ProductData = new SessionLineItemPriceDataProductDataOptions
                             {
