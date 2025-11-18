@@ -42,20 +42,19 @@ public class WebhookController : ControllerBase
             }
 
             // Handle the event
+            var stripeObject = stripeEvent.Data.Object;
+
             switch (stripeEvent.Type)
             {
-                case EventTypes.CheckoutSessionCompleted:
-                    var completedSession = stripeEvent.Data.Object as Stripe.Checkout.Session;
+                case EventTypes.CheckoutSessionCompleted when stripeObject is Stripe.Checkout.Session completedSession:
                     await _webHookHelper.HandleCheckoutSessionCompleted(completedSession);
                     break;
 
-                case EventTypes.CheckoutSessionExpired:
-                    var expiredSession = stripeEvent.Data.Object as Stripe.Checkout.Session;
+                case EventTypes.CheckoutSessionExpired when stripeObject is Stripe.Checkout.Session expiredSession:
                     await _webHookHelper.HandleCheckoutSessionExpired(expiredSession);
                     break;
 
-                case EventTypes.PaymentIntentPaymentFailed:
-                    var paymentIntent = stripeEvent.Data.Object as PaymentIntent;
+                case EventTypes.PaymentIntentPaymentFailed when stripeObject is PaymentIntent paymentIntent:
                     await _webHookHelper.HandlePaymentIntentFailed(paymentIntent);
                     break;
 
