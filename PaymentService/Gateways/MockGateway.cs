@@ -1,10 +1,11 @@
 using PaymentService.Models.DTOs;
+using PaymentService.Models.Enums;
 
 namespace PaymentService.Gateways;
 
 public class MockGateway: IPaymentGateway
 {
-    public string ProviderName =>  "mock";
+    public PaymentProvider ProviderName => PaymentProvider.Mock;
 
     public Task<GatewayResponse> CreatePaymentSessionAsync(GatewayChargeRequest request)
     {

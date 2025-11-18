@@ -1,4 +1,7 @@
+using Microsoft.Extensions.Options;
+using PaymentService.Models.Configurations;
 using PaymentService.Models.DTOs;
+using PaymentService.Models.Enums;
 using Stripe;
 using Stripe.Checkout;
 namespace PaymentService.Gateways;
@@ -6,13 +9,15 @@ namespace PaymentService.Gateways;
 public class StripeGateway: IPaymentGateway
 {
     private readonly SessionService _sessionService;
+    private readonly StripeSettings _stripeSettings;
 
-    public string ProviderName => "stripe";
+    public PaymentProvider ProviderName => PaymentProvider.Stripe;
 
-    public StripeGateway(IConfiguration configuration)
+    public StripeGateway(IOptions<StripeSettings> stripeSettings)
     {
         _sessionService = new SessionService();
-        StripeConfiguration.ApiKey = configuration["Gateways:Stripe:SecretKey"];
+        _stripeSettings = stripeSettings.Value;
+        StripeConfiguration.ApiKey = _stripeSettings.SecretKey;
     }
 
     public Task<GatewayResponse> RefundAsync(string providerPaymentId, decimal amount)
@@ -44,8 +49,8 @@ public class StripeGateway: IPaymentGateway
                     },
                 },
                 Mode = "payment",
-                SuccessUrl = "https://example.com/success",
-                CancelUrl = "https://example.com/cancel",
+                SuccessUrl = _stripeSettings.SuccessUrl,
+                CancelUrl = _stripeSettings.CancelUrl,
             };
 
             var requestOptions = new RequestOptions

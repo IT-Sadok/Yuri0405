@@ -3,13 +3,14 @@ using Microsoft.EntityFrameworkCore;
 using PaymentService.Data;
 using PaymentService.Gateways;
 using PaymentService.Helpers;
+using PaymentService.Models.Configurations;
 using PaymentService.Services;
 
 namespace PaymentService.Extentions;
 
 public static class ServiceCollectionExtentions
 {
-    public static IServiceCollection AddApplicationServices(this IServiceCollection services)
+    public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddControllers()
         .AddJsonOptions(options =>
@@ -19,6 +20,10 @@ public static class ServiceCollectionExtentions
         });
         services.AddExceptionHandler<PaymentExceptionHandler>();
         services.AddProblemDetails();
+
+        // Configure Stripe settings
+        services.Configure<StripeSettings>(configuration.GetSection("PaymentGateways:Stripe"));
+
         services.AddScoped<MockGateway>();
         services.AddScoped<StripeGateway>();
         services.AddScoped<IPaymentGatewayFactory, PaymentGatewayFactory>();
