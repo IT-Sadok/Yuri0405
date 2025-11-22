@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PaymentService.Services;
 using Stripe;
@@ -6,6 +7,7 @@ namespace PaymentService.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[AllowAnonymous]
 public class WebhookController : ControllerBase
 {
     private readonly ILogger<WebhookController> _logger;
