@@ -13,14 +13,17 @@ public class PaymentService: IPaymentService
     private readonly IPaymentGatewayFactory _paymentGatewayFactory;
     private readonly ILogger<PaymentService> _logger;
     private readonly PaymentDbContext _dbContext;
+    private readonly ICurrentUserService _currentUserService;
 
     public PaymentService(
         IPaymentGatewayFactory paymentGatewayFactory, ILogger<PaymentService> logger,
-        PaymentDbContext dbContext)
+        PaymentDbContext dbContext,
+        ICurrentUserService currentUserService)
     {
         _paymentGatewayFactory = paymentGatewayFactory;
         _logger = logger;
         _dbContext = dbContext;
+        _currentUserService = currentUserService;
     }
 
     public async Task<PaymentSessionResponse> ProcessPaymentAsync(PaymentRequest paymentRequest, string idempotencyKey)
@@ -86,7 +89,7 @@ public class PaymentService: IPaymentService
             {
                 Id = Guid.NewGuid(),
                 IdempotencyKey = idempotencyKey,
-                UserId = paymentRequest.UserId,
+                UserId = _currentUserService.GetUserId().Value,
                 PurchaseId = paymentRequest.ProductId,
                 Amount = paymentRequest.Amount,
                 Currency = paymentRequest.Currency,

@@ -55,6 +55,8 @@ public static class ServiceCollectionExtentions
             });
         }
 
+        services.AddHttpContextAccessor();
+        services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<MockGateway>();
         services.AddScoped<StripeGateway>();
         services.AddScoped<IPaymentGatewayFactory, PaymentGatewayFactory>();

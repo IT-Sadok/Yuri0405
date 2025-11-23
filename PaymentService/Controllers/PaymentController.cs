@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PaymentService.Models.DTOs;
@@ -14,12 +13,15 @@ public class PaymentController:ControllerBase
 {
     private readonly ILogger<PaymentController> _logger;
     private readonly IPaymentService _paymentService;
+    private readonly ICurrentUserService _currentUserService;
 
     public PaymentController(ILogger<PaymentController> logger,
-        IPaymentService paymentService)
+        IPaymentService paymentService,
+        ICurrentUserService currentUserService)
     {
         _logger = logger;
         _paymentService = paymentService;
+        _currentUserService = currentUserService;
     }
 
     [HttpPost]
@@ -28,16 +30,11 @@ public class PaymentController:ControllerBase
         [FromHeader(Name = "Idempotency-Key")] string idempotencyKey,
         [FromBody] PaymentRequest request)
     {
-        // Extract user ID from JWT claims
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier) ?? User.FindFirst("sub");
-        if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
+        var userId = _currentUserService.GetUserId();
+        if (userId == null)
         {
             return Unauthorized(new { error = "Invalid or missing user ID in token" });
         }
-
-        // Set the user ID from the JWT token
-        request.UserId = userId;
-
         var response = await _paymentService.ProcessPaymentAsync(request, idempotencyKey);
         return Ok(response);
     }
