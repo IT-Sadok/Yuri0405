@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PaymentService.Models.DTOs;
 using PaymentService.Models.Enums;
@@ -7,16 +8,20 @@ namespace PaymentService.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class PaymentController:ControllerBase
 {
     private readonly ILogger<PaymentController> _logger;
     private readonly IPaymentService _paymentService;
+    private readonly ICurrentUserService _currentUserService;
 
     public PaymentController(ILogger<PaymentController> logger,
-        IPaymentService paymentService)
+        IPaymentService paymentService,
+        ICurrentUserService currentUserService)
     {
         _logger = logger;
         _paymentService = paymentService;
+        _currentUserService = currentUserService;
     }
 
     [HttpPost]

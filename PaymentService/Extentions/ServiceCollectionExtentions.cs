@@ -1,5 +1,9 @@
+using System.Text;
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using PaymentService.Data;
 using PaymentService.Gateways;
 using PaymentService.Helpers;
@@ -24,6 +28,52 @@ public static class ServiceCollectionExtentions
         // Configure Stripe settings
         services.Configure<StripeSettings>(configuration.GetSection("PaymentGateways:Stripe"));
 
+
+        // Configure JWT Authentication
+        var jwtSettings = configuration.GetSection("Jwt").Get<JwtSettings>();
+        if (jwtSettings != null)
+        {
+            services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidIssuer = jwtSettings.Issuer,
+                    ValidAudience = jwtSettings.Audience,
+                    IssuerSigningKey = new SymmetricSecurityKey(
+                        Encoding.UTF8.GetBytes(jwtSettings.SecretKey)),
+                    ClockSkew = TimeSpan.Zero
+                };
+
+                options.Events = new JwtBearerEvents
+                {
+                    OnTokenValidated = context =>
+                    {
+                        var claimsPrincipal = context.Principal;
+                        var subClaim = claimsPrincipal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)
+                                       ?? claimsPrincipal?.FindFirst("sub");
+
+                        if (subClaim == null || !Guid.TryParse(subClaim.Value, out _))
+                        {
+                            context.Fail("Token must contain a valid 'sub' claim with a GUID value");
+                        }
+
+                        return Task.CompletedTask;
+                    }
+                };
+            });
+        }
+
+        services.AddHttpContextAccessor();
+        services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<MockGateway>();
         services.AddScoped<StripeGateway>();
         services.AddScoped<IPaymentGatewayFactory, PaymentGatewayFactory>();
@@ -50,7 +100,41 @@ public static class ServiceCollectionExtentions
     public static IServiceCollection AddSwaggerDocumentation(this IServiceCollection services)
     {
         services.AddEndpointsApiExplorer();
-        services.AddSwaggerGen();
+        services.AddSwaggerGen(options =>
+        {
+            options.SwaggerDoc("v1", new OpenApiInfo
+            {
+                Title = "Payment Service API",
+                Version = "v1",
+                Description = "Payment processing microservice with JWT authentication"
+            });
+
+            // Add JWT Bearer authentication to Swagger
+            options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+            {
+                Name = "Authorization",
+                Type = SecuritySchemeType.Http,
+                Scheme = "bearer",
+                BearerFormat = "JWT",
+                In = ParameterLocation.Header,
+                Description = "Enter your JWT token in the text input below.\n\nExample: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'"
+            });
+
+            options.AddSecurityRequirement(new OpenApiSecurityRequirement
+            {
+                {
+                    new OpenApiSecurityScheme
+                    {
+                        Reference = new OpenApiReference
+                        {
+                            Type = ReferenceType.SecurityScheme,
+                            Id = "Bearer"
+                        }
+                    },
+                    Array.Empty<string>()
+                }
+            });
+        });
 
         return services;
     }
