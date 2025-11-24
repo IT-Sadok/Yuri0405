@@ -30,11 +30,6 @@ public class PaymentController:ControllerBase
         [FromHeader(Name = "Idempotency-Key")] string idempotencyKey,
         [FromBody] PaymentRequest request)
     {
-        var userId = _currentUserService.GetUserId();
-        if (userId == null)
-        {
-            return Unauthorized(new { error = "Invalid or missing user ID in token" });
-        }
         var response = await _paymentService.ProcessPaymentAsync(request, idempotencyKey);
         return Ok(response);
     }

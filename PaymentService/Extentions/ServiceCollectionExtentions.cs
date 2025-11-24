@@ -52,6 +52,23 @@ public static class ServiceCollectionExtentions
                         Encoding.UTF8.GetBytes(jwtSettings.SecretKey)),
                     ClockSkew = TimeSpan.Zero
                 };
+
+                options.Events = new JwtBearerEvents
+                {
+                    OnTokenValidated = context =>
+                    {
+                        var claimsPrincipal = context.Principal;
+                        var subClaim = claimsPrincipal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)
+                                       ?? claimsPrincipal?.FindFirst("sub");
+
+                        if (subClaim == null || !Guid.TryParse(subClaim.Value, out _))
+                        {
+                            context.Fail("Token must contain a valid 'sub' claim with a GUID value");
+                        }
+
+                        return Task.CompletedTask;
+                    }
+                };
             });
         }
 
