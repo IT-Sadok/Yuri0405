@@ -1,10 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using PaymentService.Data;
 using PaymentService.Extentions;
-using PaymentService.Gateways;
-using PaymentService.Models.DTOs;
-using PaymentService.Models.Entities;
-using PaymentService.Models.Enums;
+using Application.Interfaces.Gateways;
+using Application.Interfaces.Services;
+using Application.DTOs;
+using Domain.Entities;
+using Domain.Enums;
 
 namespace PaymentService.Services;
 

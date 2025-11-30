@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using PaymentService.Models.Entities;
+using Domain.Entities;
 
 namespace PaymentService.Models.Configurations;
 

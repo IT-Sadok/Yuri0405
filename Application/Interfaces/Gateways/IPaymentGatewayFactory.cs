@@ -1,6 +1,6 @@
-using PaymentService.Models.Enums;
+using Domain.Enums;
 
-namespace PaymentService.Gateways;
+namespace Application.Interfaces.Gateways;
 
 public interface IPaymentGatewayFactory
 {

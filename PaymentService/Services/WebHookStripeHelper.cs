@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using PaymentService.Data;
-using PaymentService.Models.Enums;
+using Application.Interfaces.Services;
+using Application.DTOs;
+using Domain.Enums;
 using Stripe;
 using Stripe.Checkout;
 
@@ -19,7 +21,7 @@ public class WebHookStripeHelper : IWebHookHelper
         _dbContext = dbContext;
     }
 
-    public async Task HandleCheckoutSessionCompleted(Session? session)
+    public async Task HandleCheckoutSessionCompleted(WebhookSessionDto? session)
     {
         if (session == null) return;
 
@@ -64,7 +66,7 @@ public class WebHookStripeHelper : IWebHookHelper
         }
     }
 
-    public async Task HandleCheckoutSessionExpired(Session? session)
+    public async Task HandleCheckoutSessionExpired(WebhookSessionDto? session)
     {
         if (session == null) return;
 
@@ -108,7 +110,7 @@ public class WebHookStripeHelper : IWebHookHelper
         }
     }
 
-    public async Task HandlePaymentIntentFailed(PaymentIntent? paymentIntent)
+    public async Task HandlePaymentIntentFailed(WebhookPaymentIntentDto? paymentIntent)
     {
         if (paymentIntent == null) return;
 

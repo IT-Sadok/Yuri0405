@@ -9,6 +9,8 @@ using PaymentService.Gateways;
 using PaymentService.Helpers;
 using PaymentService.Models.Configurations;
 using PaymentService.Services;
+using Application.Interfaces.Gateways;
+using Application.Interfaces.Services;
 
 namespace PaymentService.Extentions;
 

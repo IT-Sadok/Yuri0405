@@ -1,7 +1,7 @@
 using System.Text.Json.Serialization;
-using PaymentService.Models.Enums;
+using Domain.Enums;
 
-namespace PaymentService.Models.DTOs;
+namespace Application.DTOs;
 
 public class PaymentRequest
 {

@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using PaymentService.Models.Entities;
+using Domain.Entities;
 
 namespace PaymentService.Data;
 

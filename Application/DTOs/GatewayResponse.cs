@@ -1,4 +1,4 @@
-namespace PaymentService.Models.DTOs;
+namespace Application.DTOs;
 
 public class GatewayResponse
 {

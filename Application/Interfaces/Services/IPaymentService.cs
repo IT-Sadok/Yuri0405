@@ -1,6 +1,6 @@
-using PaymentService.Models.DTOs;
+using Application.DTOs;
 
-namespace PaymentService.Services;
+namespace Application.Interfaces.Services;
 
 public interface IPaymentService
 {

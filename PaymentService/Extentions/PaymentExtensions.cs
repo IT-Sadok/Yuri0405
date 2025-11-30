@@ -1,5 +1,5 @@
-using PaymentService.Models.DTOs;
-using PaymentService.Models.Entities;
+using Application.DTOs;
+using Domain.Entities;
 
 namespace PaymentService.Extentions;
 

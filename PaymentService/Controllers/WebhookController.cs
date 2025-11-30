@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using PaymentService.Services;
+using Application.Interfaces.Services;
+using Application.DTOs;
 using Stripe;
 
 namespace PaymentService.Controllers;
@@ -49,15 +50,21 @@ public class WebhookController : ControllerBase
             switch (stripeEvent.Type)
             {
                 case EventTypes.CheckoutSessionCompleted when stripeObject is Stripe.Checkout.Session completedSession:
-                    await _webHookHelper.HandleCheckoutSessionCompleted(completedSession);
+                    await _webHookHelper.HandleCheckoutSessionCompleted(new WebhookSessionDto { Id = completedSession.Id });
                     break;
 
                 case EventTypes.CheckoutSessionExpired when stripeObject is Stripe.Checkout.Session expiredSession:
-                    await _webHookHelper.HandleCheckoutSessionExpired(expiredSession);
+                    await _webHookHelper.HandleCheckoutSessionExpired(new WebhookSessionDto { Id = expiredSession.Id });
                     break;
 
                 case EventTypes.PaymentIntentPaymentFailed when stripeObject is PaymentIntent paymentIntent:
-                    await _webHookHelper.HandlePaymentIntentFailed(paymentIntent);
+                    await _webHookHelper.HandlePaymentIntentFailed(new WebhookPaymentIntentDto
+                    {
+                        Id = paymentIntent.Id,
+                        LastPaymentError = paymentIntent.LastPaymentError != null
+                            ? new PaymentErrorDto { Message = paymentIntent.LastPaymentError.Message }
+                            : null
+                    });
                     break;
 
                 default:

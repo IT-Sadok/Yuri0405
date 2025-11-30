@@ -1,6 +1,6 @@
-using PaymentService.Models.Enums;
+using Domain.Enums;
 
-namespace PaymentService.Models.DTOs;
+namespace Application.DTOs;
 
 public class GatewayChargeRequest
 {

@@ -1,5 +1,6 @@
-using PaymentService.Models.DTOs;
-using PaymentService.Models.Enums;
+using Application.DTOs;
+using Application.Interfaces.Gateways;
+using Domain.Enums;
 
 namespace PaymentService.Gateways;
 

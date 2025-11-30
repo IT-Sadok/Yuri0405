@@ -1,4 +1,5 @@
-using PaymentService.Models.Enums;
+using Application.Interfaces.Gateways;
+using Domain.Enums;
 
 namespace PaymentService.Gateways;
 

@@ -1,7 +1,8 @@
 using Microsoft.Extensions.Options;
 using PaymentService.Models.Configurations;
-using PaymentService.Models.DTOs;
-using PaymentService.Models.Enums;
+using Application.DTOs;
+using Application.Interfaces.Gateways;
+using Domain.Enums;
 using Stripe;
 using Stripe.Checkout;
 namespace PaymentService.Gateways;

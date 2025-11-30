@@ -1,7 +1,7 @@
-using PaymentService.Models.DTOs;
-using PaymentService.Models.Enums;
+using Application.DTOs;
+using Domain.Enums;
 
-namespace PaymentService.Gateways;
+namespace Application.Interfaces.Gateways;
 
 public interface IPaymentGateway
 {

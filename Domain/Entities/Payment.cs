@@ -1,6 +1,6 @@
-using PaymentService.Models.Enums;
+using Domain.Enums;
 
-namespace PaymentService.Models.Entities;
+namespace Domain.Entities;
 
 public class Payment
 {
@@ -21,5 +21,5 @@ public class Payment
     //Timestamps
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
-    public DateTime? CompletedAt { get; set; } 
+    public DateTime? CompletedAt { get; set; }
 }

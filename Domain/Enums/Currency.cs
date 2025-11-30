@@ -1,4 +1,4 @@
-namespace PaymentService.Models.Enums;
+namespace Domain.Enums;
 
 public enum Currency
 {
