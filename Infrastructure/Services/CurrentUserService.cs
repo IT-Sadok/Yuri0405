@@ -1,7 +1,8 @@
 using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
 using Application.Interfaces.Services;
 
-namespace PaymentService.Services;
+namespace Infrastructure.Services;
 
 public class CurrentUserService : ICurrentUserService
 {

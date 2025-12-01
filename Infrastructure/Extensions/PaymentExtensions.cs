@@ -1,7 +1,7 @@
 using Application.DTOs;
 using Domain.Entities;
 
-namespace PaymentService.Extentions;
+namespace Infrastructure.Extensions;
 
 public static class PaymentExtensions
 {

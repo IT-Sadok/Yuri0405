@@ -1,11 +1,12 @@
 using Microsoft.Extensions.Options;
-using PaymentService.Models.Configurations;
+using Infrastructure.Configurations;
 using Application.DTOs;
 using Application.Interfaces.Gateways;
 using Domain.Enums;
 using Stripe;
 using Stripe.Checkout;
-namespace PaymentService.Gateways;
+
+namespace Infrastructure.Gateways;
 
 public class StripeGateway: IPaymentGateway
 {

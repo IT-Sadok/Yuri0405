@@ -1,13 +1,14 @@
 using Microsoft.EntityFrameworkCore;
-using PaymentService.Data;
-using PaymentService.Extentions;
+using Microsoft.Extensions.Logging;
+using Infrastructure.Data;
+using Infrastructure.Extensions;
 using Application.Interfaces.Gateways;
 using Application.Interfaces.Services;
 using Application.DTOs;
 using Domain.Entities;
 using Domain.Enums;
 
-namespace PaymentService.Services;
+namespace Infrastructure.Services;
 
 public class PaymentService: IPaymentService
 {

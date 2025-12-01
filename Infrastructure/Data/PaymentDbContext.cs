@@ -1,15 +1,15 @@
 using Microsoft.EntityFrameworkCore;
 using Domain.Entities;
 
-namespace PaymentService.Data;
+namespace Infrastructure.Data;
 
 public class PaymentDbContext: DbContext
 {
-    public PaymentDbContext(DbContextOptions<PaymentDbContext> options) 
+    public PaymentDbContext(DbContextOptions<PaymentDbContext> options)
         : base(options)
     {
     }
-    
+
     public DbSet<Payment> Payments { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

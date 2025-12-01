@@ -1,12 +1,12 @@
 using Microsoft.EntityFrameworkCore;
-using PaymentService.Data;
+using Microsoft.Extensions.Logging;
+using Infrastructure.Data;
 using Application.Interfaces.Services;
 using Application.DTOs;
 using Domain.Enums;
-using Stripe;
 using Stripe.Checkout;
 
-namespace PaymentService.Services;
+namespace Infrastructure.Services;
 
 public class WebHookStripeHelper : IWebHookHelper
 {

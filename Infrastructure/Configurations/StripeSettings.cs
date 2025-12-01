@@ -1,4 +1,4 @@
-namespace PaymentService.Models.Configurations;
+namespace Infrastructure.Configurations;
 
 public class StripeSettings
 {

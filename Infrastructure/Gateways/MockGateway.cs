@@ -2,7 +2,7 @@ using Application.DTOs;
 using Application.Interfaces.Gateways;
 using Domain.Enums;
 
-namespace PaymentService.Gateways;
+namespace Infrastructure.Gateways;
 
 public class MockGateway: IPaymentGateway
 {
