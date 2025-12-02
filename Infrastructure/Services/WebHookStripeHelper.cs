@@ -21,7 +21,7 @@ public class WebHookStripeHelper : IWebHookHelper
         _dbContext = dbContext;
     }
 
-    public async Task HandleCheckoutSessionCompleted(WebhookSessionDto? session)
+    public async Task HandleCheckoutSessionCompleted(WebhookSessionModel? session)
     {
         if (session == null) return;
 
@@ -66,7 +66,7 @@ public class WebHookStripeHelper : IWebHookHelper
         }
     }
 
-    public async Task HandleCheckoutSessionExpired(WebhookSessionDto? session)
+    public async Task HandleCheckoutSessionExpired(WebhookSessionModel? session)
     {
         if (session == null) return;
 
@@ -110,7 +110,7 @@ public class WebHookStripeHelper : IWebHookHelper
         }
     }
 
-    public async Task HandlePaymentIntentFailed(WebhookPaymentIntentDto? paymentIntent)
+    public async Task HandlePaymentIntentFailed(WebhookPaymentIntentModel? paymentIntent)
     {
         if (paymentIntent == null) return;
 

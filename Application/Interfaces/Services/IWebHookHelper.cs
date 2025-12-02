@@ -4,7 +4,7 @@ namespace Application.Interfaces.Services;
 
 public interface IWebHookHelper
 {
-    Task HandleCheckoutSessionCompleted(WebhookSessionDto? session);
-    Task HandleCheckoutSessionExpired(WebhookSessionDto? session);
-    Task HandlePaymentIntentFailed(WebhookPaymentIntentDto? paymentIntent);
+    Task HandleCheckoutSessionCompleted(WebhookSessionModel? session);
+    Task HandleCheckoutSessionExpired(WebhookSessionModel? session);
+    Task HandlePaymentIntentFailed(WebhookPaymentIntentModel? paymentIntent);
 }

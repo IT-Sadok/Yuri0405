@@ -1,6 +1,6 @@
 namespace Application.DTOs;
 
-public class WebhookSessionDto
+public class WebhookSessionModel
 {
     public string Id { get; set; }
 }
