@@ -1,4 +1,5 @@
 using PaymentService.Extentions;
+using Infrastructure.Extensions;
 
 namespace PaymentService;
 
@@ -9,7 +10,8 @@ public class Program
         var builder = WebApplication.CreateBuilder(args);
 
         // Add services to the container.
-        builder.Services.AddApplicationServices(builder.Configuration);
+        builder.Services.AddApiServices();
+        builder.Services.AddInfrastructureServices(builder.Configuration);
         builder.Services.AddPaymentDatabase(builder.Configuration);
 
         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

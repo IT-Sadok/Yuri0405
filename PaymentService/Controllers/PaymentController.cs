@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using PaymentService.Models.DTOs;
-using PaymentService.Models.Enums;
-using PaymentService.Services;
+using Application.DTOs;
+using Application.Interfaces.Services;
+using Domain.Enums;
 
 namespace PaymentService.Controllers;
 
