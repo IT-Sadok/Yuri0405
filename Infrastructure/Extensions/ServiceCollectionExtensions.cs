@@ -5,9 +5,11 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Infrastructure.Configurations;
+using Infrastructure.Configuration;
 using Infrastructure.Data;
 using Infrastructure.Gateways;
 using Infrastructure.Services;
+using Infrastructure.BackgroundServices;
 using Application.Interfaces.Gateways;
 using Application.Interfaces.Services;
 
@@ -19,6 +21,9 @@ public static class ServiceCollectionExtensions
     {
         // Configure Stripe settings
         services.Configure<StripeSettings>(configuration.GetSection("PaymentGateways:Stripe"));
+
+        // Configure Kafka settings
+        services.Configure<KafkaSettings>(configuration.GetSection("Kafka"));
 
         // Configure JWT Authentication
         var jwtSettings = configuration.GetSection("Jwt").Get<JwtSettings>();
@@ -71,6 +76,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IPaymentService, PaymentService>();
         services.AddScoped<IWebHookHelper, WebHookStripeHelper>();
         services.AddAuthorization();
+
+        // Register background services
+        services.AddHostedService<OutboxProcessorBackgroundService>();
 
         return services;
     }
