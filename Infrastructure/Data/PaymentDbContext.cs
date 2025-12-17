@@ -12,7 +12,7 @@ public class PaymentDbContext: DbContext
     }
 
     public DbSet<Payment> Payments { get; set; }
-    public DbSet<OutboxPaymentMessage> OutboxPaymentMessages { get; set; }
+    public DbSet<OutboxMessage> OutboxMessages { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
