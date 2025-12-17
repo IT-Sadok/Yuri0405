@@ -65,8 +65,8 @@ public class OutboxProcessorBackgroundService : BackgroundService
         using var scope = _serviceProvider.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<PaymentDbContext>();
 
-        var unprocessedMessages = await dbContext.OutboxPaymentMessages
-            .Where(m => !m.IsProcessed)
+        var unprocessedMessages = await dbContext.OutboxMessages
+            .Where(m => m.ProcessedOn == null)
             .OrderBy(m => m.OccuredOn)
             .Take(_kafkaSettings.BatchSize)
             .ToListAsync(cancellationToken);
@@ -101,7 +101,7 @@ public class OutboxProcessorBackgroundService : BackgroundService
                     deliveryResult.Topic,
                     deliveryResult.Offset);
 
-                message.IsProcessed = true;
+                message.ProcessedOn = DateTime.UtcNow;
                 await dbContext.SaveChangesAsync(cancellationToken);
 
                 _logger.LogInformation(

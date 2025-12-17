@@ -53,22 +53,23 @@ public class WebHookStripeHelper : IWebHookHelper
 
             var paymentCompletedEvent = new PaymentCompletedEvent
             {
+                Id = Guid.NewGuid(),
+                OccuredOn = DateTime.UtcNow,
                 PaymentId = payment.Id,
                 PurchaseId = payment.PurchaseId,
                 Amount = payment.Amount,
                 Currency = payment.Currency,
-                CompletedAt = payment.CompletedAt.Value
             };
 
-            var outboxMessage = new OutboxPaymentMessage
+            var outboxMessage = new OutboxMessage
             {
-                Id = Guid.NewGuid(),
-                OccuredOn = DateTime.UtcNow,
+                Id = paymentCompletedEvent.Id,
+                OccuredOn = paymentCompletedEvent.OccuredOn,
                 Payload = JsonSerializer.Serialize(paymentCompletedEvent),
-                IsProcessed = false
+                Type = nameof(PaymentCompletedEvent),
             };
 
-            await _dbContext.OutboxPaymentMessages.AddAsync(outboxMessage);
+            await _dbContext.OutboxMessages.AddAsync(outboxMessage);
 
             await _dbContext.SaveChangesAsync();
             await transaction.CommitAsync();
