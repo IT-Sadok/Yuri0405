@@ -14,24 +14,29 @@ public class OutboxProcessorBackgroundService : BackgroundService
     private readonly ILogger<OutboxProcessorBackgroundService> _logger;
     private readonly IServiceProvider _serviceProvider;
     private readonly KafkaSettings _kafkaSettings;
+    private readonly OutboxSettings _outboxSettings;
     private readonly IProducer<string, string> _producer;
 
     public OutboxProcessorBackgroundService(
         ILogger<OutboxProcessorBackgroundService> logger,
         IServiceProvider serviceProvider,
-        IOptions<KafkaSettings> kafkaSettings)
+        IOptions<KafkaSettings> kafkaSettings,
+        IOptions<OutboxSettings> outboxSettings)
     {
         _logger = logger;
         _serviceProvider = serviceProvider;
         _kafkaSettings = kafkaSettings.Value;
+        _outboxSettings = outboxSettings.Value;
 
         var config = new ProducerConfig
         {
             BootstrapServers = _kafkaSettings.BootstrapServers,
-            Acks = Acks.All,
-            EnableIdempotence = true,
-            MaxInFlight = 5,
-            MessageSendMaxRetries = 3
+            EnableIdempotence = _kafkaSettings.EnableIdempotence,
+            MaxInFlight = _kafkaSettings.MaxInFlight,
+            MessageSendMaxRetries = 3,
+            Acks = _kafkaSettings.EnableIdempotence 
+                    ? Acks.All 
+                    : Enum.Parse<Acks>(_kafkaSettings.Acks, true)
         };
 
         _producer = new ProducerBuilder<string, string>(config).Build();
@@ -47,7 +52,7 @@ public class OutboxProcessorBackgroundService : BackgroundService
             {
                 await ProcessOutboxMessages(stoppingToken);
                 await Task.Delay(
-                    TimeSpan.FromSeconds(_kafkaSettings.ProcessingIntervalSeconds),
+                    TimeSpan.FromSeconds(_outboxSettings.ProcessingIntervalSeconds),
                     stoppingToken);
             }
             catch (Exception ex)
@@ -68,7 +73,7 @@ public class OutboxProcessorBackgroundService : BackgroundService
         var unprocessedMessages = await dbContext.OutboxMessages
             .Where(m => m.ProcessedOn == null)
             .OrderBy(m => m.OccuredOn)
-            .Take(_kafkaSettings.BatchSize)
+            .Take(_outboxSettings.BatchSize)
             .ToListAsync(cancellationToken);
 
         if (unprocessedMessages.Count == 0)
@@ -91,7 +96,7 @@ public class OutboxProcessorBackgroundService : BackgroundService
                 };
 
                 var deliveryResult = await _producer.ProduceAsync(
-                    _kafkaSettings.PaymentCompletedTopic,
+                    _kafkaSettings.TopicMap[message.Type],
                     kafkaMessage,
                     cancellationToken);
 
@@ -102,7 +107,7 @@ public class OutboxProcessorBackgroundService : BackgroundService
                     deliveryResult.Offset);
 
                 message.ProcessedOn = DateTime.UtcNow;
-                await dbContext.SaveChangesAsync(cancellationToken);
+                
 
                 _logger.LogInformation(
                     "Message {MessageId} marked as processed",
@@ -124,6 +129,8 @@ public class OutboxProcessorBackgroundService : BackgroundService
                     message.Id);
             }
         }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
     }
 
     public override void Dispose()

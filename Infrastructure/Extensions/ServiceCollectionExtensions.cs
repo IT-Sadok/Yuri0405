@@ -25,6 +25,9 @@ public static class ServiceCollectionExtensions
         // Configure Kafka settings
         services.Configure<KafkaSettings>(configuration.GetSection("Kafka"));
 
+        // Configure Outbox settings
+        services.Configure<OutboxSettings>(configuration.GetSection("Outbox"));
+
         // Configure JWT Authentication
         var jwtSettings = configuration.GetSection("Jwt").Get<JwtSettings>();
         if (jwtSettings != null)
