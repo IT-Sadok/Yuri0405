@@ -4,7 +4,9 @@ using Infrastructure.Data;
 using Application.Interfaces.Services;
 using Application.DTOs;
 using Domain.Enums;
+using Domain.Events;
 using Stripe.Checkout;
+using System.Text.Json;
 
 namespace Infrastructure.Services;
 
@@ -48,6 +50,26 @@ public class WebHookStripeHelper : IWebHookHelper
             payment.FailureReason = null;
             payment.CompletedAt = DateTime.UtcNow;
             payment.UpdatedAt = DateTime.UtcNow;
+
+            var paymentCompletedEvent = new PaymentCompletedEvent
+            {
+                Id = Guid.NewGuid(),
+                OccuredOn = DateTime.UtcNow,
+                PaymentId = payment.Id,
+                PurchaseId = payment.PurchaseId,
+                Amount = payment.Amount,
+                Currency = payment.Currency,
+            };
+
+            var outboxMessage = new OutboxMessage
+            {
+                Id = paymentCompletedEvent.Id,
+                OccuredOn = paymentCompletedEvent.OccuredOn,
+                Payload = JsonSerializer.Serialize(paymentCompletedEvent),
+                Type = nameof(PaymentCompletedEvent),
+            };
+
+            await _dbContext.OutboxMessages.AddAsync(outboxMessage);
 
             await _dbContext.SaveChangesAsync();
             await transaction.CommitAsync();
