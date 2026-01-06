@@ -20,18 +20,17 @@ public class Program
         var app = builder.Build();
 
         app.UseExceptionHandler();
-        app.MapControllers();
         // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment())
         {
             app.UseSwagger();
             app.UseSwaggerUI();
         }
-
-        app.UseHttpsRedirection();
-
+        
         app.UseAuthentication();
         app.UseAuthorization();
+
+        app.MapControllers();
 
         app.Run();
     }
