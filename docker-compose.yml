@@ -106,6 +106,30 @@ services:
     networks:
       - payment-network
 
+  insurance-service:
+    build:
+      context: .
+      dockerfile: src/InsuranceService/Dockerfile
+    container_name: insurance-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      payment-service:
+        condition: service_started
+    ports:
+      - "8081:8080"
+    env_file:
+      - .env
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      Kafka__BootstrapServers: kafka:29092
+      PaymentServiceUrl: http://payment-service:8080
+    networks:
+      - payment-network
+
   kafka-consumer:
     image: confluentinc/cp-kafka:7.5.0
     container_name: payment-kafka-consumer
