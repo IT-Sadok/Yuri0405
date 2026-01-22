@@ -29,15 +29,9 @@ public class PoliciesController : ControllerBase
             return Unauthorized("Customer ID not found in token");
         }
 
-        var jwtToken = Request.Headers["Authorization"].ToString();
-        if (string.IsNullOrEmpty(jwtToken))
-        {
-            return Unauthorized("Authorization token is required");
-        }
-
         try
         {
-            var policy = await _policyService.CreatePolicyAsync(request, customerId, jwtToken);
+            var policy = await _policyService.CreatePolicyAsync(request, customerId);
             return CreatedAtAction(nameof(GetPolicyById), new { id = policy.Id }, policy);
         }
         catch (InvalidOperationException ex)

@@ -10,35 +10,18 @@ namespace Infrastructure.Services;
 public class PolicyService : IPolicyService
 {
     private readonly InsuranceDbContext _context;
-    private readonly IPaymentHttpClient _paymentHttpClient;
 
-    public PolicyService(InsuranceDbContext context, IPaymentHttpClient paymentHttpClient)
+    public PolicyService(InsuranceDbContext context)
     {
         _context = context;
-        _paymentHttpClient = paymentHttpClient;
     }
 
-    public async Task<PolicyResponse> CreatePolicyAsync(CreatePolicyRequest request, Guid customerId, string jwtToken)
+    public async Task<PolicyResponse> CreatePolicyAsync(CreatePolicyRequest request, Guid customerId)
     {
         var policyNumber = await GeneratePolicyNumberAsync();
 
         var startDate = DateTime.UtcNow;
         var endDate = startDate.AddMonths(request.DurationMonths);
-
-        var paymentRequest = new PaymentRequest
-        {
-            ProductId = request.ProductId,
-            Amount = request.PremiumAmount,
-            Currency = Currency.USD,
-            Provider = PaymentProvider.Stripe
-        };
-
-        var paymentResponse = await _paymentHttpClient.ProcessPaymentAsync(paymentRequest, jwtToken);
-
-        if (!paymentResponse.Success)
-        {
-            throw new InvalidOperationException("Payment processing failed");
-        }
 
         var policy = new Policy
         {
@@ -51,14 +34,13 @@ public class PolicyService : IPolicyService
             StartDate = startDate,
             EndDate = endDate,
             Status = PolicyStatus.PendingPayment,
-            PaymentReferenceId = paymentResponse.PaymentId.ToString(),
             CreatedAt = DateTime.UtcNow
         };
 
         _context.Policies.Add(policy);
         await _context.SaveChangesAsync();
 
-        return MapToResponse(policy, paymentResponse.PaymentUrl);
+        return MapToResponse(policy);
     }
 
     public async Task<PolicyResponse?> GetPolicyByIdAsync(Guid id)
@@ -109,7 +91,7 @@ public class PolicyService : IPolicyService
         return $"POL-{currentYear}-{maxNumber + 1:D3}";
     }
 
-    private static PolicyResponse MapToResponse(Policy policy, string? checkoutUrl = null)
+    private static PolicyResponse MapToResponse(Policy policy)
     {
         return new PolicyResponse
         {
@@ -123,7 +105,6 @@ public class PolicyService : IPolicyService
             EndDate = policy.EndDate,
             Status = policy.Status,
             PaymentReferenceId = policy.PaymentReferenceId,
-            CheckoutUrl = checkoutUrl,
             CreatedAt = policy.CreatedAt
         };
     }

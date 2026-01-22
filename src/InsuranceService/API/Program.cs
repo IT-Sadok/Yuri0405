@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using System.Text.Json.Serialization;
 using API.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -15,6 +16,7 @@ builder.Services.AddDbContext<InsuranceDbContext>(options =>
 
 // Add services
 builder.Services.AddScoped<IPolicyService, PolicyService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
 
 // Add HttpClient for Payment service
 builder.Services.AddHttpClient<IPaymentHttpClient, PaymentHttpClient>(client =>
@@ -49,7 +51,11 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddAuthorization();
 
 // Add controllers
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
 
 // Add Swagger with JWT authentication
 builder.Services.AddEndpointsApiExplorer();

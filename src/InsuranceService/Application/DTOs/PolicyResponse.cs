@@ -14,6 +14,5 @@ public class PolicyResponse
     public DateTime EndDate { get; set; }
     public PolicyStatus Status { get; set; }
     public string? PaymentReferenceId { get; set; }
-    public string? CheckoutUrl { get; set; }
     public DateTime CreatedAt { get; set; }
 }
