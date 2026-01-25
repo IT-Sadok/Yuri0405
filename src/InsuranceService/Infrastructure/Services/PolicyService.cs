@@ -68,6 +68,33 @@ public class PolicyService : IPolicyService
         return policies.Select(p => MapToResponse(p));
     }
 
+    public async Task<PolicyActivationResult> ActivatePolicyAsync(Guid policyId, string paymentReferenceId)
+    {
+        var policy = await _context.Policies.FindAsync(policyId);
+
+        if (policy == null)
+        {
+            return PolicyActivationResult.PolicyNotFound;
+        }
+
+        if (policy.Status == PolicyStatus.Active)
+        {
+            return PolicyActivationResult.AlreadyProcessed;
+        }
+
+        if (policy.Status != PolicyStatus.PendingPayment)
+        {
+            return PolicyActivationResult.InvalidStatus;
+        }
+
+        policy.Status = PolicyStatus.Active;
+        policy.PaymentReferenceId = paymentReferenceId;
+
+        await _context.SaveChangesAsync();
+
+        return PolicyActivationResult.Success;
+    }
+
     private async Task<string> GeneratePolicyNumberAsync()
     {
         var currentYear = DateTime.UtcNow.Year;

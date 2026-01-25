@@ -125,7 +125,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
-      Kafka__BootstrapServers: kafka:29092
+      KafkaConsumer__BootstrapServers: kafka:29092
       PaymentServiceUrl: http://payment-service:8080
     networks:
       - payment-network

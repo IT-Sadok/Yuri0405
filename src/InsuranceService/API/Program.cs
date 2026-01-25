@@ -1,5 +1,6 @@
 using Application.Interfaces;
 using Infrastructure.Data;
+using Infrastructure.Extensions;
 using Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -24,6 +25,9 @@ builder.Services.AddHttpClient<IPaymentHttpClient, PaymentHttpClient>(client =>
     var paymentServiceUrl = builder.Configuration["PaymentServiceUrl"];
     client.BaseAddress = new Uri(paymentServiceUrl!);
 });
+
+// Add Kafka consumer
+builder.Services.AddKafkaConsumer(builder.Configuration);
 
 // Add JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("Jwt");
