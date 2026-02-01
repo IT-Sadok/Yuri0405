@@ -10,6 +10,7 @@ public class InsuranceDbContext : DbContext
     }
 
     public DbSet<Policy> Policies { get; set; } = null!;
+    public DbSet<Order> Orders { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

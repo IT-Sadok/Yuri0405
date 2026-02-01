@@ -129,38 +129,38 @@ public class PaymentEventConsumerBackgroundService : BackgroundService
             paymentEvent.Currency);
 
         using var scope = _scopeFactory.CreateScope();
-        var policyService = scope.ServiceProvider.GetRequiredService<IPolicyService>();
+        var orderService = scope.ServiceProvider.GetRequiredService<IOrderService>();
 
-        var result = await policyService.ActivatePolicyAsync(
+        var result = await orderService.ActivateOrderAsync(
             paymentEvent.PurchaseId,
             paymentEvent.PaymentId.ToString());
 
         switch (result)
         {
-            case PolicyActivationResult.Success:
+            case OrderActivationResult.Success:
                 _logger.LogInformation(
-                    "Policy {PolicyId} activated successfully with payment reference {PaymentId}",
+                    "Order {OrderId} activated successfully with payment reference {PaymentId}",
                     paymentEvent.PurchaseId,
                     paymentEvent.PaymentId);
                 break;
 
-            case PolicyActivationResult.PolicyNotFound:
+            case OrderActivationResult.OrderNotFound:
                 _logger.LogWarning(
-                    "Policy {PolicyId} not found for payment {PaymentId}",
+                    "Order {OrderId} not found for payment {PaymentId}",
                     paymentEvent.PurchaseId,
                     paymentEvent.PaymentId);
                 break;
 
-            case PolicyActivationResult.AlreadyProcessed:
+            case OrderActivationResult.AlreadyProcessed:
                 _logger.LogInformation(
-                    "Policy {PolicyId} was already processed (idempotency check). Payment: {PaymentId}",
+                    "Order {OrderId} was already processed (idempotency check). Payment: {PaymentId}",
                     paymentEvent.PurchaseId,
                     paymentEvent.PaymentId);
                 break;
 
-            case PolicyActivationResult.InvalidStatus:
+            case OrderActivationResult.InvalidStatus:
                 _logger.LogWarning(
-                    "Policy {PolicyId} has invalid status for activation. Payment: {PaymentId}",
+                    "Order {OrderId} has invalid status for activation. Payment: {PaymentId}",
                     paymentEvent.PurchaseId,
                     paymentEvent.PaymentId);
                 break;

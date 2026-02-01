@@ -2,7 +2,6 @@ using Application.DTOs;
 using Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace API.Controllers;
 
@@ -23,20 +22,14 @@ public class PoliciesController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<PolicyResponse>> CreatePolicy([FromBody] CreatePolicyRequest request)
     {
-        var customerId = GetCustomerIdFromClaims();
-        if (customerId == Guid.Empty)
-        {
-            return Unauthorized("Customer ID not found in token");
-        }
-
         try
         {
-            var policy = await _policyService.CreatePolicyAsync(request, customerId);
+            var policy = await _policyService.CreatePolicyAsync(request);
             return CreatedAtAction(nameof(GetPolicyById), new { id = policy.Id }, policy);
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogError(ex, "Failed to create policy for customer {CustomerId}", customerId);
+            _logger.LogError(ex, "Failed to create policy");
             return BadRequest(ex.Message);
         }
     }
@@ -59,25 +52,5 @@ public class PoliciesController : ControllerBase
         }
 
         return Ok(policy);
-    }
-
-    [HttpGet("customer/{customerId:guid}")]
-    public async Task<ActionResult<IEnumerable<PolicyResponse>>> GetPoliciesByCustomerId(Guid customerId)
-    {
-        var policies = await _policyService.GetPoliciesByCustomerIdAsync(customerId);
-        return Ok(policies);
-    }
-
-    private Guid GetCustomerIdFromClaims()
-    {
-        var customerIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                             ?? User.FindFirst("sub")?.Value;
-
-        if (string.IsNullOrEmpty(customerIdClaim) || !Guid.TryParse(customerIdClaim, out var customerId))
-        {
-            return Guid.Empty;
-        }
-
-        return customerId;
     }
 }

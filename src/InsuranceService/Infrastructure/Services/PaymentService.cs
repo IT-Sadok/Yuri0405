@@ -17,15 +17,15 @@ public class PaymentService : IPaymentService
 
     public async Task<PaymentInitiationResponse> InitiatePaymentAsync(InitiatePaymentRequest request, string jwtToken)
     {
-        var policy = await _context.Policies.FindAsync(request.PolicyId);
-        if (policy == null)
+        var order = await _context.Orders.FindAsync(request.OrderId);
+        if (order == null)
         {
-            throw new InvalidOperationException("Policy not found");
+            throw new InvalidOperationException("Order not found");
         }
 
         var paymentRequest = new PaymentRequest
         {
-            ProductId = request.PolicyId,
+            ProductId = request.OrderId,
             Amount = request.Amount,
             Currency = request.Currency,
             Provider = request.Provider
@@ -35,7 +35,7 @@ public class PaymentService : IPaymentService
 
         if (paymentResponse.Success)
         {
-            policy.PaymentReferenceId = paymentResponse.PaymentId.ToString();
+            order.PaymentReferenceId = paymentResponse.PaymentId.ToString();
             await _context.SaveChangesAsync();
         }
 

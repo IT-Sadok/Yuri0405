@@ -1,4 +1,6 @@
 using Application.Interfaces;
+using Domain.Entities;
+using Domain.Enums;
 using Infrastructure.Data;
 using Infrastructure.Extensions;
 using Infrastructure.Services;
@@ -18,6 +20,7 @@ builder.Services.AddDbContext<InsuranceDbContext>(options =>
 // Add services
 builder.Services.AddScoped<IPolicyService, PolicyService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
 
 // Add HttpClient for Payment service
 builder.Services.AddHttpClient<IPaymentHttpClient, PaymentHttpClient>(client =>
@@ -99,6 +102,56 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 var app = builder.Build();
+
+// Apply pending migrations and seed data
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<InsuranceDbContext>();
+    db.Database.Migrate();
+
+    if (!db.Policies.Any())
+    {
+        db.Policies.AddRange(
+            new Policy
+            {
+                Id = Guid.NewGuid(),
+                Name = "Basic Health Plan",
+                Description = "Essential health coverage for individuals including doctor visits and emergency care",
+                ProductType = ProductType.Health,
+                CoverageAmount = 50_000m,
+                PremiumAmount = 199.99m,
+                DurationMonths = 12,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            },
+            new Policy
+            {
+                Id = Guid.NewGuid(),
+                Name = "Full Auto Coverage",
+                Description = "Comprehensive auto insurance covering collision, liability, and uninsured motorist",
+                ProductType = ProductType.Auto,
+                CoverageAmount = 100_000m,
+                PremiumAmount = 89.50m,
+                DurationMonths = 6,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            },
+            new Policy
+            {
+                Id = Guid.NewGuid(),
+                Name = "Home Protection Plus",
+                Description = "Full home insurance covering structure, personal property, and natural disasters",
+                ProductType = ProductType.Home,
+                CoverageAmount = 250_000m,
+                PremiumAmount = 149.00m,
+                DurationMonths = 12,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            }
+        );
+        db.SaveChanges();
+    }
+}
 
 // Configure the HTTP request pipeline
 app.UseMiddleware<GlobalExceptionHandlingMiddleware>();

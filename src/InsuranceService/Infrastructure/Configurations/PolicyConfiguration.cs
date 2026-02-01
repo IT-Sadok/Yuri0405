@@ -10,34 +10,28 @@ public class PolicyConfiguration : IEntityTypeConfiguration<Policy>
     {
         builder.HasKey(p => p.Id);
 
-        builder.Property(p => p.PolicyNumber)
-            .IsRequired()
-            .HasMaxLength(50);
-
-        builder.HasIndex(p => p.PolicyNumber)
-            .IsUnique();
-
-        builder.Property(p => p.CustomerName)
+        builder.Property(p => p.Name)
             .IsRequired()
             .HasMaxLength(200);
+
+        builder.Property(p => p.Description)
+            .HasMaxLength(1000);
+
+        builder.Property(p => p.CoverageAmount)
+            .HasPrecision(18, 2)
+            .IsRequired();
 
         builder.Property(p => p.PremiumAmount)
             .HasPrecision(18, 2)
             .IsRequired();
 
-        builder.Property(p => p.StartDate)
+        builder.Property(p => p.DurationMonths)
             .IsRequired();
 
-        builder.Property(p => p.EndDate)
-            .IsRequired();
-
-        builder.Property(p => p.Status)
+        builder.Property(p => p.IsActive)
             .IsRequired();
 
         builder.Property(p => p.CreatedAt)
             .IsRequired();
-
-        builder.Property(p => p.PaymentReferenceId)
-            .HasMaxLength(100);
     }
 }

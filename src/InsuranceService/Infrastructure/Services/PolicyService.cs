@@ -1,7 +1,6 @@
 using Application.DTOs;
 using Application.Interfaces;
 using Domain.Entities;
-using Domain.Enums;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,24 +15,18 @@ public class PolicyService : IPolicyService
         _context = context;
     }
 
-    public async Task<PolicyResponse> CreatePolicyAsync(CreatePolicyRequest request, Guid customerId)
+    public async Task<PolicyResponse> CreatePolicyAsync(CreatePolicyRequest request)
     {
-        var policyNumber = await GeneratePolicyNumberAsync();
-
-        var startDate = DateTime.UtcNow;
-        var endDate = startDate.AddMonths(request.DurationMonths);
-
         var policy = new Policy
         {
             Id = Guid.NewGuid(),
-            PolicyNumber = policyNumber,
+            Name = request.Name,
+            Description = request.Description,
             ProductType = request.ProductType,
-            CustomerId = customerId,
-            CustomerName = request.CustomerName,
+            CoverageAmount = request.CoverageAmount,
             PremiumAmount = request.PremiumAmount,
-            StartDate = startDate,
-            EndDate = endDate,
-            Status = PolicyStatus.PendingPayment,
+            DurationMonths = request.DurationMonths,
+            IsActive = true,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -49,73 +42,13 @@ public class PolicyService : IPolicyService
         return policy != null ? MapToResponse(policy) : null;
     }
 
-    public async Task<IEnumerable<PolicyResponse>> GetPoliciesByCustomerIdAsync(Guid customerId)
-    {
-        var policies = await _context.Policies
-            .Where(p => p.CustomerId == customerId)
-            .OrderByDescending(p => p.CreatedAt)
-            .ToListAsync();
-
-        return policies.Select(p => MapToResponse(p));
-    }
-
     public async Task<IEnumerable<PolicyResponse>> GetAllPoliciesAsync()
     {
         var policies = await _context.Policies
             .OrderByDescending(p => p.CreatedAt)
             .ToListAsync();
 
-        return policies.Select(p => MapToResponse(p));
-    }
-
-    public async Task<PolicyActivationResult> ActivatePolicyAsync(Guid policyId, string paymentReferenceId)
-    {
-        var policy = await _context.Policies.FindAsync(policyId);
-
-        if (policy == null)
-        {
-            return PolicyActivationResult.PolicyNotFound;
-        }
-
-        if (policy.Status == PolicyStatus.Active)
-        {
-            return PolicyActivationResult.AlreadyProcessed;
-        }
-
-        if (policy.Status != PolicyStatus.PendingPayment)
-        {
-            return PolicyActivationResult.InvalidStatus;
-        }
-
-        policy.Status = PolicyStatus.Active;
-        policy.PaymentReferenceId = paymentReferenceId;
-
-        await _context.SaveChangesAsync();
-
-        return PolicyActivationResult.Success;
-    }
-
-    private async Task<string> GeneratePolicyNumberAsync()
-    {
-        var currentYear = DateTime.UtcNow.Year;
-        var prefix = $"POL-{currentYear}-";
-
-        var policyNumbers = await _context.Policies
-            .Where(p => p.PolicyNumber.StartsWith(prefix))
-            .Select(p => p.PolicyNumber)
-            .ToListAsync();
-
-        if (!policyNumbers.Any())
-        {
-            return $"POL-{currentYear}-001";
-        }
-
-        var maxNumber = policyNumbers
-            .Select(pn => int.TryParse(pn.Split('-').Last(), out var num) ? num : 0)
-            .DefaultIfEmpty(0)
-            .Max();
-
-        return $"POL-{currentYear}-{maxNumber + 1:D3}";
+        return policies.Select(MapToResponse);
     }
 
     private static PolicyResponse MapToResponse(Policy policy)
@@ -123,15 +56,13 @@ public class PolicyService : IPolicyService
         return new PolicyResponse
         {
             Id = policy.Id,
-            PolicyNumber = policy.PolicyNumber,
+            Name = policy.Name,
+            Description = policy.Description,
             ProductType = policy.ProductType,
-            CustomerId = policy.CustomerId,
-            CustomerName = policy.CustomerName,
+            CoverageAmount = policy.CoverageAmount,
             PremiumAmount = policy.PremiumAmount,
-            StartDate = policy.StartDate,
-            EndDate = policy.EndDate,
-            Status = policy.Status,
-            PaymentReferenceId = policy.PaymentReferenceId,
+            DurationMonths = policy.DurationMonths,
+            IsActive = policy.IsActive,
             CreatedAt = policy.CreatedAt
         };
     }
