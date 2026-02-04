@@ -42,13 +42,24 @@ public class PolicyService : IPolicyService
         return policy != null ? MapToResponse(policy) : null;
     }
 
-    public async Task<IEnumerable<PolicyResponse>> GetAllPoliciesAsync()
+    public async Task<PagedResponse<PolicyResponse>> GetAllPoliciesAsync(int page = 1, int pageSize = 10)
     {
-        var policies = await _context.Policies
-            .OrderByDescending(p => p.CreatedAt)
+        var query = _context.Policies.OrderByDescending(p => p.CreatedAt);
+
+        var totalCount = await query.CountAsync();
+
+        var policies = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync();
 
-        return policies.Select(MapToResponse);
+        return new PagedResponse<PolicyResponse>
+        {
+            Items = policies.Select(MapToResponse),
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = totalCount
+        };
     }
 
     private static PolicyResponse MapToResponse(Policy policy)

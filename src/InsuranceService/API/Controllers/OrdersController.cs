@@ -42,7 +42,9 @@ public class OrdersController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<OrderResponse>>> GetMyOrders()
+    public async Task<ActionResult<PagedResponse<OrderResponse>>> GetMyOrders(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10)
     {
         var customerId = GetCustomerIdFromClaims();
         if (customerId == Guid.Empty)
@@ -50,7 +52,11 @@ public class OrdersController : ControllerBase
             return Unauthorized("Customer ID not found in token");
         }
 
-        var orders = await _orderService.GetOrdersByCustomerIdAsync(customerId);
+        if (page < 1) page = 1;
+        if (pageSize < 1) pageSize = 10;
+        if (pageSize > 100) pageSize = 100;
+
+        var orders = await _orderService.GetOrdersByCustomerIdAsync(customerId, page, pageSize);
         return Ok(orders);
     }
 

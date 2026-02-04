@@ -35,9 +35,15 @@ public class PoliciesController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<PolicyResponse>>> GetAllPolicies()
+    public async Task<ActionResult<PagedResponse<PolicyResponse>>> GetAllPolicies(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10)
     {
-        var policies = await _policyService.GetAllPoliciesAsync();
+        if (page < 1) page = 1;
+        if (pageSize < 1) pageSize = 10;
+        if (pageSize > 100) pageSize = 100;
+
+        var policies = await _policyService.GetAllPoliciesAsync(page, pageSize);
         return Ok(policies);
     }
 

@@ -79,25 +79,49 @@ public class OrderService : IOrderService
         return order != null ? MapToResponse(order, order.Policy) : null;
     }
 
-    public async Task<IEnumerable<OrderResponse>> GetOrdersByCustomerIdAsync(Guid customerId)
+    public async Task<PagedResponse<OrderResponse>> GetOrdersByCustomerIdAsync(Guid customerId, int page = 1, int pageSize = 10)
     {
-        var orders = await _context.Orders
+        var query = _context.Orders
             .Include(o => o.Policy)
             .Where(o => o.CustomerId == customerId)
-            .OrderByDescending(o => o.CreatedAt)
+            .OrderByDescending(o => o.CreatedAt);
+
+        var totalCount = await query.CountAsync();
+
+        var orders = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync();
 
-        return orders.Select(o => MapToResponse(o, o.Policy));
+        return new PagedResponse<OrderResponse>
+        {
+            Items = orders.Select(o => MapToResponse(o, o.Policy)),
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = totalCount
+        };
     }
 
-    public async Task<IEnumerable<OrderResponse>> GetAllOrdersAsync()
+    public async Task<PagedResponse<OrderResponse>> GetAllOrdersAsync(int page = 1, int pageSize = 10)
     {
-        var orders = await _context.Orders
+        var query = _context.Orders
             .Include(o => o.Policy)
-            .OrderByDescending(o => o.CreatedAt)
+            .OrderByDescending(o => o.CreatedAt);
+
+        var totalCount = await query.CountAsync();
+
+        var orders = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync();
 
-        return orders.Select(o => MapToResponse(o, o.Policy));
+        return new PagedResponse<OrderResponse>
+        {
+            Items = orders.Select(o => MapToResponse(o, o.Policy)),
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = totalCount
+        };
     }
 
     public async Task<OrderActivationResult> ActivateOrderAsync(Guid orderId, string paymentReferenceId)
