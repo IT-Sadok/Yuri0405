@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.Text.Json.Serialization;
-using API.Middleware;
+using API.Helpers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -62,6 +62,10 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddAuthorization();
+
+// Add exception handler
+builder.Services.AddExceptionHandler<InsuranceExceptionHandler>();
+builder.Services.AddProblemDetails();
 
 // Add controllers
 builder.Services.AddControllers()
@@ -160,7 +164,7 @@ using (var scope = app.Services.CreateScope())
 }
 
 // Configure the HTTP request pipeline
-app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
+app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
 {
