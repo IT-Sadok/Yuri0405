@@ -11,6 +11,6 @@ public class Policy
     public decimal CoverageAmount { get; set; }
     public decimal PremiumAmount { get; set; }
     public int DurationMonths { get; set; }
-    public bool IsActive { get; set; }
+    public PolicyStatus Status { get; set; }
     public DateTime CreatedAt { get; set; }
 }

@@ -28,7 +28,7 @@ public class PolicyConfiguration : IEntityTypeConfiguration<Policy>
         builder.Property(p => p.DurationMonths)
             .IsRequired();
 
-        builder.Property(p => p.IsActive)
+        builder.Property(p => p.Status)
             .IsRequired();
 
         builder.Property(p => p.CreatedAt)

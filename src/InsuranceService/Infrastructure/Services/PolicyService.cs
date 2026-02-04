@@ -1,6 +1,7 @@
 using Application.DTOs;
 using Application.Interfaces;
 using Domain.Entities;
+using Domain.Enums;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -26,7 +27,7 @@ public class PolicyService : IPolicyService
             CoverageAmount = request.CoverageAmount,
             PremiumAmount = request.PremiumAmount,
             DurationMonths = request.DurationMonths,
-            IsActive = true,
+            Status = PolicyStatus.Active,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -73,7 +74,7 @@ public class PolicyService : IPolicyService
             CoverageAmount = policy.CoverageAmount,
             PremiumAmount = policy.PremiumAmount,
             DurationMonths = policy.DurationMonths,
-            IsActive = policy.IsActive,
+            Status = policy.Status,
             CreatedAt = policy.CreatedAt
         };
     }

@@ -131,7 +131,7 @@ using (var scope = app.Services.CreateScope())
                 CoverageAmount = 50_000m,
                 PremiumAmount = 199.99m,
                 DurationMonths = 12,
-                IsActive = true,
+                Status = PolicyStatus.Active,
                 CreatedAt = DateTime.UtcNow
             },
             new Policy
@@ -143,7 +143,7 @@ using (var scope = app.Services.CreateScope())
                 CoverageAmount = 100_000m,
                 PremiumAmount = 89.50m,
                 DurationMonths = 6,
-                IsActive = true,
+                Status = PolicyStatus.Active,
                 CreatedAt = DateTime.UtcNow
             },
             new Policy
@@ -155,7 +155,7 @@ using (var scope = app.Services.CreateScope())
                 CoverageAmount = 250_000m,
                 PremiumAmount = 149.00m,
                 DurationMonths = 12,
-                IsActive = true,
+                Status = PolicyStatus.Active,
                 CreatedAt = DateTime.UtcNow
             }
         );

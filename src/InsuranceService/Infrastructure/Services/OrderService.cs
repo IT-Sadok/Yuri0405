@@ -26,7 +26,7 @@ public class OrderService : IOrderService
             throw new InvalidOperationException("Policy not found");
         }
 
-        if (!policy.IsActive)
+        if (policy.Status != PolicyStatus.Active)
         {
             throw new InvalidOperationException("Policy is not active");
         }
