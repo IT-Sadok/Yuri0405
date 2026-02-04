@@ -1,3 +1,5 @@
+using Confluent.Kafka;
+
 namespace Infrastructure.Configurations;
 
 public class KafkaConsumerSettings
@@ -8,5 +10,5 @@ public class KafkaConsumerSettings
     public string GroupId { get; set; } = string.Empty;
     public string Topic { get; set; } = string.Empty;
     public bool EnableAutoCommit { get; set; } = false;
-    public string AutoOffsetReset { get; set; } = "earliest";
+    public AutoOffsetReset AutoOffsetReset { get; set; } = AutoOffsetReset.Latest;
 }

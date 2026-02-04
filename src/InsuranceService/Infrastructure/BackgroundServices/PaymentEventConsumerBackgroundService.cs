@@ -31,7 +31,7 @@ public class PaymentEventConsumerBackgroundService : BackgroundService
             BootstrapServers = _settings.BootstrapServers,
             GroupId = _settings.GroupId,
             EnableAutoCommit = _settings.EnableAutoCommit,
-            AutoOffsetReset = Enum.Parse<AutoOffsetReset>(_settings.AutoOffsetReset, ignoreCase: true)
+            AutoOffsetReset = _settings.AutoOffsetReset
         };
 
         _consumer = new ConsumerBuilder<string, string>(config).Build();
