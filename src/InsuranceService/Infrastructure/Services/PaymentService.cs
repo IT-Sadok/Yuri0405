@@ -15,7 +15,7 @@ public class PaymentService : IPaymentService
         _paymentHttpClient = paymentHttpClient;
     }
 
-    public async Task<PaymentInitiationResponse> InitiatePaymentAsync(InitiatePaymentRequest request, string jwtToken)
+    public async Task<PaymentInitiationResponse> InitiatePaymentAsync(InitiatePaymentRequest request)
     {
         var order = await _context.Orders.FindAsync(request.OrderId);
         if (order == null)
@@ -31,7 +31,7 @@ public class PaymentService : IPaymentService
             Provider = request.Provider
         };
 
-        var paymentResponse = await _paymentHttpClient.ProcessPaymentAsync(paymentRequest, jwtToken);
+        var paymentResponse = await _paymentHttpClient.ProcessPaymentAsync(paymentRequest);
 
         if (paymentResponse.Success)
         {

@@ -4,5 +4,5 @@ namespace Application.Interfaces;
 
 public interface IPaymentService
 {
-    Task<PaymentInitiationResponse> InitiatePaymentAsync(InitiatePaymentRequest request, string jwtToken);
+    Task<PaymentInitiationResponse> InitiatePaymentAsync(InitiatePaymentRequest request);
 }

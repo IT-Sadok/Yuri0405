@@ -3,6 +3,7 @@ using Domain.Entities;
 using Domain.Enums;
 using Infrastructure.Data;
 using Infrastructure.Extensions;
+using Infrastructure.HttpHandlers;
 using Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -22,12 +23,17 @@ builder.Services.AddScoped<IPolicyService, PolicyService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 
-// Add HttpClient for Payment service
+// Add HttpContextAccessor for forwarding auth headers
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddTransient<AuthHeaderHandler>();
+
+// Add HttpClient for Payment service with auth header forwarding
 builder.Services.AddHttpClient<IPaymentHttpClient, PaymentHttpClient>(client =>
 {
     var paymentServiceUrl = builder.Configuration["PaymentServiceUrl"];
     client.BaseAddress = new Uri(paymentServiceUrl!);
-});
+})
+.AddHttpMessageHandler<AuthHeaderHandler>();
 
 // Add Kafka consumer
 builder.Services.AddKafkaConsumer(builder.Configuration);

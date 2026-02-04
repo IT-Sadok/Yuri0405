@@ -12,7 +12,7 @@ public enum OrderActivationResult
 
 public interface IOrderService
 {
-    Task<CreateOrderResponse> CreateOrderAsync(CreateOrderRequest request, Guid customerId, string jwtToken);
+    Task<CreateOrderResponse> CreateOrderAsync(CreateOrderRequest request, Guid customerId);
     Task<OrderResponse?> GetOrderByIdAsync(Guid id);
     Task<IEnumerable<OrderResponse>> GetOrdersByCustomerIdAsync(Guid customerId);
     Task<IEnumerable<OrderResponse>> GetAllOrdersAsync();

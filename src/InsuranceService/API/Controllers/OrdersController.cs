@@ -29,15 +29,9 @@ public class OrdersController : ControllerBase
             return Unauthorized("Customer ID not found in token");
         }
 
-        var jwtToken = Request.Headers["Authorization"].ToString();
-        if (string.IsNullOrEmpty(jwtToken))
-        {
-            return Unauthorized("Authorization token is required");
-        }
-
         try
         {
-            var response = await _orderService.CreateOrderAsync(request, customerId, jwtToken);
+            var response = await _orderService.CreateOrderAsync(request, customerId);
             return CreatedAtAction(nameof(GetOrderById), new { id = response.Order.Id }, response);
         }
         catch (InvalidOperationException ex)

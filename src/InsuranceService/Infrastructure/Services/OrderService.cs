@@ -18,7 +18,7 @@ public class OrderService : IOrderService
         _paymentService = paymentService;
     }
 
-    public async Task<CreateOrderResponse> CreateOrderAsync(CreateOrderRequest request, Guid customerId, string jwtToken)
+    public async Task<CreateOrderResponse> CreateOrderAsync(CreateOrderRequest request, Guid customerId)
     {
         var policy = await _context.Policies.FindAsync(request.PolicyId);
         if (policy == null)
@@ -60,7 +60,7 @@ public class OrderService : IOrderService
             Provider = request.Provider
         };
 
-        var paymentResponse = await _paymentService.InitiatePaymentAsync(paymentRequest, jwtToken);
+        var paymentResponse = await _paymentService.InitiatePaymentAsync(paymentRequest);
 
         return new CreateOrderResponse
         {

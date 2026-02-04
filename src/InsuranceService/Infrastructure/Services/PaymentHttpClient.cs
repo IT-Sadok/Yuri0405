@@ -20,7 +20,7 @@ public class PaymentHttpClient : IPaymentHttpClient
         };
     }
 
-    public async Task<PaymentResponse> ProcessPaymentAsync(PaymentRequest request, string jwtToken)
+    public async Task<PaymentResponse> ProcessPaymentAsync(PaymentRequest request)
     {
         try
         {
@@ -30,7 +30,6 @@ public class PaymentHttpClient : IPaymentHttpClient
             using var httpRequest = new HttpRequestMessage(HttpMethod.Post, "/api/Payment");
             httpRequest.Content = content;
             httpRequest.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
-            httpRequest.Headers.Add("Authorization", jwtToken);
 
             var response = await _httpClient.SendAsync(httpRequest);
 
