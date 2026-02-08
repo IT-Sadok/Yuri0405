@@ -1,5 +1,7 @@
 using PaymentService.Extentions;
+using Infrastructure.Data;
 using Infrastructure.Extensions;
+using Microsoft.EntityFrameworkCore;
 
 namespace PaymentService;
 
@@ -18,6 +20,13 @@ public class Program
         builder.Services.AddSwaggerDocumentation();
 
         var app = builder.Build();
+
+        // Apply pending migrations
+        using (var scope = app.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<PaymentDbContext>();
+            db.Database.Migrate();
+        }
 
         app.UseExceptionHandler();
         // Configure the HTTP request pipeline.

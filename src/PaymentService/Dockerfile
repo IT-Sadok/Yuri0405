@@ -3,22 +3,22 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
 # Copy solution file
-COPY ["MyPetProjectsSolution.sln", "./"]
+COPY ["InsuranceSystemSolution.sln", "./"]
 
 # Copy project files
-COPY ["PaymentService/PaymentService.csproj", "PaymentService/"]
-COPY ["Application/Application.csproj", "Application/"]
-COPY ["Domain/Domain.csproj", "Domain/"]
-COPY ["Infrastructure/Infrastructure.csproj", "Infrastructure/"]
+COPY ["src/PaymentService/API/PaymentService.csproj", "src/PaymentService/API/"]
+COPY ["src/PaymentService/Application/Application.csproj", "src/PaymentService/Application/"]
+COPY ["src/PaymentService/Domain/Domain.csproj", "src/PaymentService/Domain/"]
+COPY ["src/PaymentService/Infrastructure/Infrastructure.csproj", "src/PaymentService/Infrastructure/"]
 
 # Restore dependencies
-RUN dotnet restore "PaymentService/PaymentService.csproj"
+RUN dotnet restore "src/PaymentService/API/PaymentService.csproj"
 
 # Copy source code
 COPY . .
 
 # Build the application
-WORKDIR "/src/PaymentService"
+WORKDIR "/src/src/PaymentService/API"
 RUN dotnet build "PaymentService.csproj" -c Release -o /app/build
 
 # Publish stage
