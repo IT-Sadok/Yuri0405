@@ -5,14 +5,14 @@ using Domain.Enums;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
-namespace Infrastructure.Services;
+namespace Infrastructure.Services.Commands;
 
-public class OrderService : IOrderService
+public class OrderCommandService : IOrderCommandService
 {
     private readonly InsuranceDbContext _context;
     private readonly IPaymentService _paymentService;
 
-    public OrderService(InsuranceDbContext context, IPaymentService paymentService)
+    public OrderCommandService(InsuranceDbContext context, IPaymentService paymentService)
     {
         _context = context;
         _paymentService = paymentService;
@@ -67,60 +67,6 @@ public class OrderService : IOrderService
             Order = MapToResponse(order, policy),
             CheckoutUrl = paymentResponse.CheckoutUrl,
             PaymentId = paymentResponse.PaymentId
-        };
-    }
-
-    public async Task<OrderResponse?> GetOrderByIdAsync(Guid id)
-    {
-        var order = await _context.Orders
-            .Include(o => o.Policy)
-            .FirstOrDefaultAsync(o => o.Id == id);
-
-        return order != null ? MapToResponse(order, order.Policy) : null;
-    }
-
-    public async Task<PagedResponse<OrderResponse>> GetOrdersByCustomerIdAsync(Guid customerId, int page = 1, int pageSize = 10)
-    {
-        var query = _context.Orders
-            .Include(o => o.Policy)
-            .Where(o => o.CustomerId == customerId)
-            .OrderByDescending(o => o.CreatedAt);
-
-        var totalCount = await query.CountAsync();
-
-        var orders = await query
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync();
-
-        return new PagedResponse<OrderResponse>
-        {
-            Items = orders.Select(o => MapToResponse(o, o.Policy)),
-            Page = page,
-            PageSize = pageSize,
-            TotalCount = totalCount
-        };
-    }
-
-    public async Task<PagedResponse<OrderResponse>> GetAllOrdersAsync(int page = 1, int pageSize = 10)
-    {
-        var query = _context.Orders
-            .Include(o => o.Policy)
-            .OrderByDescending(o => o.CreatedAt);
-
-        var totalCount = await query.CountAsync();
-
-        var orders = await query
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync();
-
-        return new PagedResponse<OrderResponse>
-        {
-            Items = orders.Select(o => MapToResponse(o, o.Policy)),
-            Page = page,
-            PageSize = pageSize,
-            TotalCount = totalCount
         };
     }
 

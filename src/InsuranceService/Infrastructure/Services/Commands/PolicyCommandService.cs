@@ -3,15 +3,14 @@ using Application.Interfaces;
 using Domain.Entities;
 using Domain.Enums;
 using Infrastructure.Data;
-using Microsoft.EntityFrameworkCore;
 
-namespace Infrastructure.Services;
+namespace Infrastructure.Services.Commands;
 
-public class PolicyService : IPolicyService
+public class PolicyCommandService : IPolicyCommandService
 {
     private readonly InsuranceDbContext _context;
 
-    public PolicyService(InsuranceDbContext context)
+    public PolicyCommandService(InsuranceDbContext context)
     {
         _context = context;
     }
@@ -34,37 +33,6 @@ public class PolicyService : IPolicyService
         _context.Policies.Add(policy);
         await _context.SaveChangesAsync();
 
-        return MapToResponse(policy);
-    }
-
-    public async Task<PolicyResponse?> GetPolicyByIdAsync(Guid id)
-    {
-        var policy = await _context.Policies.FindAsync(id);
-        return policy != null ? MapToResponse(policy) : null;
-    }
-
-    public async Task<PagedResponse<PolicyResponse>> GetAllPoliciesAsync(int page = 1, int pageSize = 10)
-    {
-        var query = _context.Policies.OrderByDescending(p => p.CreatedAt);
-
-        var totalCount = await query.CountAsync();
-
-        var policies = await query
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync();
-
-        return new PagedResponse<PolicyResponse>
-        {
-            Items = policies.Select(MapToResponse),
-            Page = page,
-            PageSize = pageSize,
-            TotalCount = totalCount
-        };
-    }
-
-    private static PolicyResponse MapToResponse(Policy policy)
-    {
         return new PolicyResponse
         {
             Id = policy.Id,

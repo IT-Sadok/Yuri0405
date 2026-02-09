@@ -129,9 +129,9 @@ public class PaymentEventConsumerBackgroundService : BackgroundService
             paymentEvent.Currency);
 
         using var scope = _scopeFactory.CreateScope();
-        var orderService = scope.ServiceProvider.GetRequiredService<IOrderService>();
+        var orderCommandService = scope.ServiceProvider.GetRequiredService<IOrderCommandService>();
 
-        var result = await orderService.ActivateOrderAsync(
+        var result = await orderCommandService.ActivateOrderAsync(
             paymentEvent.PurchaseId,
             paymentEvent.PaymentId.ToString());
 

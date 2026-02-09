@@ -11,12 +11,17 @@ namespace API.Controllers;
 [Authorize]
 public class OrdersController : ControllerBase
 {
-    private readonly IOrderService _orderService;
+    private readonly IOrderCommandService _commandService;
+    private readonly IOrderQueryService _queryService;
     private readonly ILogger<OrdersController> _logger;
 
-    public OrdersController(IOrderService orderService, ILogger<OrdersController> logger)
+    public OrdersController(
+        IOrderCommandService commandService,
+        IOrderQueryService queryService,
+        ILogger<OrdersController> logger)
     {
-        _orderService = orderService;
+        _commandService = commandService;
+        _queryService = queryService;
         _logger = logger;
     }
 
@@ -31,7 +36,7 @@ public class OrdersController : ControllerBase
 
         try
         {
-            var response = await _orderService.CreateOrderAsync(request, customerId);
+            var response = await _commandService.CreateOrderAsync(request, customerId);
             return CreatedAtAction(nameof(GetOrderById), new { id = response.Order.Id }, response);
         }
         catch (InvalidOperationException ex)
@@ -56,14 +61,14 @@ public class OrdersController : ControllerBase
         if (pageSize < 1) pageSize = 10;
         if (pageSize > 100) pageSize = 100;
 
-        var orders = await _orderService.GetOrdersByCustomerIdAsync(customerId, page, pageSize);
+        var orders = await _queryService.GetOrdersByCustomerIdAsync(customerId, page, pageSize);
         return Ok(orders);
     }
 
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<OrderResponse>> GetOrderById(Guid id)
     {
-        var order = await _orderService.GetOrderByIdAsync(id);
+        var order = await _queryService.GetOrderByIdAsync(id);
 
         if (order == null)
         {

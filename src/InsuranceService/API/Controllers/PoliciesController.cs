@@ -10,12 +10,17 @@ namespace API.Controllers;
 [Authorize]
 public class PoliciesController : ControllerBase
 {
-    private readonly IPolicyService _policyService;
+    private readonly IPolicyCommandService _commandService;
+    private readonly IPolicyQueryService _queryService;
     private readonly ILogger<PoliciesController> _logger;
 
-    public PoliciesController(IPolicyService policyService, ILogger<PoliciesController> logger)
+    public PoliciesController(
+        IPolicyCommandService commandService,
+        IPolicyQueryService queryService,
+        ILogger<PoliciesController> logger)
     {
-        _policyService = policyService;
+        _commandService = commandService;
+        _queryService = queryService;
         _logger = logger;
     }
 
@@ -24,7 +29,7 @@ public class PoliciesController : ControllerBase
     {
         try
         {
-            var policy = await _policyService.CreatePolicyAsync(request);
+            var policy = await _commandService.CreatePolicyAsync(request);
             return CreatedAtAction(nameof(GetPolicyById), new { id = policy.Id }, policy);
         }
         catch (InvalidOperationException ex)
@@ -43,14 +48,14 @@ public class PoliciesController : ControllerBase
         if (pageSize < 1) pageSize = 10;
         if (pageSize > 100) pageSize = 100;
 
-        var policies = await _policyService.GetAllPoliciesAsync(page, pageSize);
+        var policies = await _queryService.GetAllPoliciesAsync(page, pageSize);
         return Ok(policies);
     }
 
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<PolicyResponse>> GetPolicyById(Guid id)
     {
-        var policy = await _policyService.GetPolicyByIdAsync(id);
+        var policy = await _queryService.GetPolicyByIdAsync(id);
 
         if (policy == null)
         {

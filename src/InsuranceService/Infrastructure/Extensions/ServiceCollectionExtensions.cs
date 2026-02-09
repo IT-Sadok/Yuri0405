@@ -3,6 +3,8 @@ using Infrastructure.BackgroundServices;
 using Infrastructure.Configurations;
 using Infrastructure.Data;
 using Infrastructure.Services;
+using Infrastructure.Services.Commands;
+using Infrastructure.Services.Queries;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,10 +15,16 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
     {
-        // Add application services
-        services.AddScoped<IPolicyService, PolicyService>();
+        // Add command services
+        services.AddScoped<IPolicyCommandService, PolicyCommandService>();
+        services.AddScoped<IOrderCommandService, OrderCommandService>();
+
+        // Add query services
+        services.AddScoped<IPolicyQueryService, PolicyQueryService>();
+        services.AddScoped<IOrderQueryService, OrderQueryService>();
+
+        // Add other services
         services.AddScoped<IPaymentService, PaymentService>();
-        services.AddScoped<IOrderService, OrderService>();
 
         // Add Kafka consumer
         services.Configure<KafkaConsumerSettings>(
