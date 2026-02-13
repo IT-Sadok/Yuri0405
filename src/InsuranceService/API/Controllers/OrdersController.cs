@@ -1,5 +1,7 @@
+using Application.Commands;
 using Application.DTOs;
-using Application.Interfaces;
+using Application.Mediator;
+using Application.Queries;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -9,22 +11,8 @@ namespace API.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class OrdersController : ControllerBase
+public class OrdersController(IMediator mediator, ILogger<OrdersController> logger) : ControllerBase
 {
-    private readonly IOrderCommandService _commandService;
-    private readonly IOrderQueryService _queryService;
-    private readonly ILogger<OrdersController> _logger;
-
-    public OrdersController(
-        IOrderCommandService commandService,
-        IOrderQueryService queryService,
-        ILogger<OrdersController> logger)
-    {
-        _commandService = commandService;
-        _queryService = queryService;
-        _logger = logger;
-    }
-
     [HttpPost]
     public async Task<ActionResult<CreateOrderResponse>> CreateOrder([FromBody] CreateOrderRequest request)
     {
@@ -36,12 +24,12 @@ public class OrdersController : ControllerBase
 
         try
         {
-            var response = await _commandService.CreateOrderAsync(request, customerId);
+            var response = await mediator.Send(new CreateOrderCommand(request, customerId));
             return CreatedAtAction(nameof(GetOrderById), new { id = response.Order.Id }, response);
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogError(ex, "Failed to create order for customer {CustomerId}", customerId);
+            logger.LogError(ex, "Failed to create order for customer {CustomerId}", customerId);
             return BadRequest(ex.Message);
         }
     }
@@ -61,14 +49,14 @@ public class OrdersController : ControllerBase
         if (pageSize < 1) pageSize = 10;
         if (pageSize > 100) pageSize = 100;
 
-        var orders = await _queryService.GetOrdersByCustomerIdAsync(customerId, page, pageSize);
+        var orders = await mediator.Send(new GetOrdersByCustomerIdQuery(customerId, page, pageSize));
         return Ok(orders);
     }
 
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<OrderResponse>> GetOrderById(Guid id)
     {
-        var order = await _queryService.GetOrderByIdAsync(id);
+        var order = await mediator.Send(new GetOrderByIdQuery(id));
 
         if (order == null)
         {

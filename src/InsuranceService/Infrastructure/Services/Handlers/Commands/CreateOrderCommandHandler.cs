@@ -1,26 +1,23 @@
+using Application.Commands;
 using Application.DTOs;
 using Application.Interfaces;
+using Application.Mediator;
 using Domain.Entities;
 using Domain.Enums;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
-namespace Infrastructure.Services.Commands;
+namespace Infrastructure.Services.Handlers.Commands;
 
-public class OrderCommandService : IOrderCommandService
+public class CreateOrderCommandHandler(InsuranceDbContext context, IPaymentService paymentService)
+    : IRequestHandler<CreateOrderCommand, CreateOrderResponse>
 {
-    private readonly InsuranceDbContext _context;
-    private readonly IPaymentService _paymentService;
-
-    public OrderCommandService(InsuranceDbContext context, IPaymentService paymentService)
+    public async Task<CreateOrderResponse> Handle(CreateOrderCommand command, CancellationToken cancellationToken = default)
     {
-        _context = context;
-        _paymentService = paymentService;
-    }
+        var request = command.Request;
+        var customerId = command.CustomerId;
 
-    public async Task<CreateOrderResponse> CreateOrderAsync(CreateOrderRequest request, Guid customerId)
-    {
-        var policy = await _context.Policies.FindAsync(request.PolicyId);
+        var policy = await context.Policies.FindAsync([request.PolicyId], cancellationToken);
         if (policy == null)
         {
             throw new InvalidOperationException("Policy not found");
@@ -31,7 +28,7 @@ public class OrderCommandService : IOrderCommandService
             throw new InvalidOperationException("Policy is not active");
         }
 
-        var orderNumber = await GenerateOrderNumberAsync();
+        var orderNumber = await GenerateOrderNumberAsync(cancellationToken);
         var startDate = DateTime.UtcNow;
         var endDate = startDate.AddMonths(policy.DurationMonths);
 
@@ -49,8 +46,8 @@ public class OrderCommandService : IOrderCommandService
             CreatedAt = DateTime.UtcNow
         };
 
-        _context.Orders.Add(order);
-        await _context.SaveChangesAsync();
+        context.Orders.Add(order);
+        await context.SaveChangesAsync(cancellationToken);
 
         var paymentRequest = new InitiatePaymentRequest
         {
@@ -60,7 +57,7 @@ public class OrderCommandService : IOrderCommandService
             Provider = request.Provider
         };
 
-        var paymentResponse = await _paymentService.InitiatePaymentAsync(paymentRequest);
+        var paymentResponse = await paymentService.InitiatePaymentAsync(paymentRequest);
 
         return new CreateOrderResponse
         {
@@ -70,42 +67,15 @@ public class OrderCommandService : IOrderCommandService
         };
     }
 
-    public async Task<OrderActivationResult> ActivateOrderAsync(Guid orderId, string paymentReferenceId)
-    {
-        var order = await _context.Orders.FindAsync(orderId);
-
-        if (order == null)
-        {
-            return OrderActivationResult.OrderNotFound;
-        }
-
-        if (order.Status == OrderStatus.Active)
-        {
-            return OrderActivationResult.AlreadyProcessed;
-        }
-
-        if (order.Status != OrderStatus.PendingPayment)
-        {
-            return OrderActivationResult.InvalidStatus;
-        }
-
-        order.Status = OrderStatus.Active;
-        order.PaymentReferenceId = paymentReferenceId;
-
-        await _context.SaveChangesAsync();
-
-        return OrderActivationResult.Success;
-    }
-
-    private async Task<string> GenerateOrderNumberAsync()
+    private async Task<string> GenerateOrderNumberAsync(CancellationToken cancellationToken)
     {
         var currentYear = DateTime.UtcNow.Year;
         var prefix = $"ORD-{currentYear}-";
 
-        var orderNumbers = await _context.Orders
+        var orderNumbers = await context.Orders
             .Where(o => o.OrderNumber.StartsWith(prefix))
             .Select(o => o.OrderNumber)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         if (!orderNumbers.Any())
         {

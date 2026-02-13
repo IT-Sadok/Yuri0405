@@ -1,5 +1,3 @@
-using Application.DTOs;
-
 namespace Application.Interfaces;
 
 public enum OrderActivationResult
@@ -10,8 +8,7 @@ public enum OrderActivationResult
     InvalidStatus
 }
 
-public interface IOrderCommandService
+public interface IOrderService
 {
-    Task<CreateOrderResponse> CreateOrderAsync(CreateOrderRequest request, Guid customerId);
     Task<OrderActivationResult> ActivateOrderAsync(Guid orderId, string paymentReferenceId);
 }

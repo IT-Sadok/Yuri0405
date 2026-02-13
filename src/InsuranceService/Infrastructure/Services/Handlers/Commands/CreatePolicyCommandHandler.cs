@@ -1,22 +1,19 @@
+using Application.Commands;
 using Application.DTOs;
-using Application.Interfaces;
+using Application.Mediator;
 using Domain.Entities;
 using Domain.Enums;
 using Infrastructure.Data;
 
-namespace Infrastructure.Services.Commands;
+namespace Infrastructure.Services.Handlers.Commands;
 
-public class PolicyCommandService : IPolicyCommandService
+public class CreatePolicyCommandHandler(InsuranceDbContext context)
+    : IRequestHandler<CreatePolicyCommand, PolicyResponse>
 {
-    private readonly InsuranceDbContext _context;
-
-    public PolicyCommandService(InsuranceDbContext context)
+    public async Task<PolicyResponse> Handle(CreatePolicyCommand command, CancellationToken cancellationToken = default)
     {
-        _context = context;
-    }
+        var request = command.Request;
 
-    public async Task<PolicyResponse> CreatePolicyAsync(CreatePolicyRequest request)
-    {
         var policy = new Policy
         {
             Id = Guid.NewGuid(),
@@ -30,8 +27,8 @@ public class PolicyCommandService : IPolicyCommandService
             CreatedAt = DateTime.UtcNow
         };
 
-        _context.Policies.Add(policy);
-        await _context.SaveChangesAsync();
+        context.Policies.Add(policy);
+        await context.SaveChangesAsync(cancellationToken);
 
         return new PolicyResponse
         {
