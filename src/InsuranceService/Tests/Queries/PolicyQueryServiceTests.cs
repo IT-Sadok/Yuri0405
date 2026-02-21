@@ -1,13 +1,15 @@
+using Application.Handlers.Queries;
+using Application.Queries;
 using Domain.Entities;
 using Domain.Enums;
-using Infrastructure.Services.Queries;
+using Infrastructure.Repositories;
 
 namespace Tests.Queries;
 
 public class PolicyQueryServiceTests
 {
     [Fact]
-    public async Task GetPolicyByIdAsync_ExistingPolicy_ReturnsPolicy()
+    public async Task GetPolicyById_ExistingPolicy_ReturnsPolicy()
     {
         // Arrange
         using var context = TestDbContextFactory.Create();
@@ -26,10 +28,10 @@ public class PolicyQueryServiceTests
         context.Policies.Add(policy);
         await context.SaveChangesAsync();
 
-        var service = new PolicyQueryService(context);
+        var handler = new GetPolicyByIdQueryHandler(new PolicyRepository(context));
 
         // Act
-        var result = await service.GetPolicyByIdAsync(policy.Id);
+        var result = await handler.Handle(new GetPolicyByIdQuery(policy.Id));
 
         // Assert
         Assert.NotNull(result);
@@ -38,21 +40,21 @@ public class PolicyQueryServiceTests
     }
 
     [Fact]
-    public async Task GetPolicyByIdAsync_NonExistingPolicy_ReturnsNull()
+    public async Task GetPolicyById_NonExistingPolicy_ReturnsNull()
     {
         // Arrange
         using var context = TestDbContextFactory.Create();
-        var service = new PolicyQueryService(context);
+        var handler = new GetPolicyByIdQueryHandler(new PolicyRepository(context));
 
         // Act
-        var result = await service.GetPolicyByIdAsync(Guid.NewGuid());
+        var result = await handler.Handle(new GetPolicyByIdQuery(Guid.NewGuid()));
 
         // Assert
         Assert.Null(result);
     }
 
     [Fact]
-    public async Task GetAllPoliciesAsync_ReturnsPaginatedResultsOrderedByNewest()
+    public async Task GetAllPolicies_ReturnsPaginatedResultsOrderedByNewest()
     {
         // Arrange
         using var context = TestDbContextFactory.Create();
@@ -73,10 +75,10 @@ public class PolicyQueryServiceTests
         }
         await context.SaveChangesAsync();
 
-        var service = new PolicyQueryService(context);
+        var handler = new GetAllPoliciesQueryHandler(new PolicyRepository(context));
 
         // Act
-        var result = await service.GetAllPoliciesAsync(page: 1, pageSize: 10);
+        var result = await handler.Handle(new GetAllPoliciesQuery(Page: 1, PageSize: 10));
 
         // Assert
         Assert.Equal(10, result.Items.Count());

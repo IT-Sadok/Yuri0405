@@ -1,8 +1,11 @@
+using Application.Commands;
 using Application.DTOs;
+using Application.Handlers.Commands;
 using Application.Interfaces;
+using Application.Services;
 using Domain.Entities;
 using Domain.Enums;
-using Infrastructure.Services.Commands;
+using Infrastructure.Repositories;
 using Moq;
 
 namespace Tests.Commands;
@@ -25,57 +28,59 @@ public class OrderCommandServiceTests
     }
 
     [Fact]
-    public async Task CreateOrderAsync_ValidRequest_ReturnsOrderWithCheckoutUrl()
+    public async Task CreateOrder_ValidCommand_ReturnsOrderWithCheckoutUrl()
     {
         // Arrange
         using var context = TestDbContextFactory.Create();
         var policy = CreateActivePolicy(context);
         await context.SaveChangesAsync();
 
-        var service = new OrderCommandService(context, _paymentServiceMock.Object);
-        var customerId = Guid.NewGuid();
+        var handler = new CreateOrderCommandHandler(
+            new OrderRepository(context),
+            new PolicyRepository(context),
+            _paymentServiceMock.Object);
 
-        var request = new CreateOrderRequest
-        {
-            PolicyId = policy.Id,
-            CustomerName = "John Doe",
-            Currency = Currency.USD,
-            Provider = PaymentProvider.Stripe
-        };
+        var command = new CreateOrderCommand(
+            PolicyId: policy.Id,
+            CustomerName: "John Doe",
+            Currency: Currency.USD,
+            Provider: PaymentProvider.Stripe,
+            CustomerId: Guid.NewGuid());
 
         // Act
-        var result = await service.CreateOrderAsync(request, customerId);
+        var result = await handler.Handle(command);
 
         // Assert
         Assert.NotNull(result.Order);
         Assert.NotNull(result.CheckoutUrl);
         Assert.NotEqual(Guid.Empty, result.PaymentId);
-        Assert.Equal(customerId, result.Order.CustomerId);
+        Assert.Equal(command.CustomerId, result.Order.CustomerId);
         Assert.Equal(OrderStatus.PendingPayment, result.Order.Status);
     }
 
     [Fact]
-    public async Task CreateOrderAsync_PolicyNotFound_ThrowsInvalidOperationException()
+    public async Task CreateOrder_PolicyNotFound_ThrowsInvalidOperationException()
     {
         // Arrange
         using var context = TestDbContextFactory.Create();
-        var service = new OrderCommandService(context, _paymentServiceMock.Object);
+        var handler = new CreateOrderCommandHandler(
+            new OrderRepository(context),
+            new PolicyRepository(context),
+            _paymentServiceMock.Object);
 
-        var request = new CreateOrderRequest
-        {
-            PolicyId = Guid.NewGuid(),
-            CustomerName = "John Doe",
-            Currency = Currency.USD,
-            Provider = PaymentProvider.Stripe
-        };
+        var command = new CreateOrderCommand(
+            PolicyId: Guid.NewGuid(),
+            CustomerName: "John Doe",
+            Currency: Currency.USD,
+            Provider: PaymentProvider.Stripe,
+            CustomerId: Guid.NewGuid());
 
         // Act & Assert
-        await Assert.ThrowsAsync<InvalidOperationException>(
-            () => service.CreateOrderAsync(request, Guid.NewGuid()));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => handler.Handle(command));
     }
 
     [Fact]
-    public async Task CreateOrderAsync_InactivePolicy_ThrowsInvalidOperationException()
+    public async Task CreateOrder_InactivePolicy_ThrowsInvalidOperationException()
     {
         // Arrange
         using var context = TestDbContextFactory.Create();
@@ -94,62 +99,49 @@ public class OrderCommandServiceTests
         context.Policies.Add(policy);
         await context.SaveChangesAsync();
 
-        var service = new OrderCommandService(context, _paymentServiceMock.Object);
+        var handler = new CreateOrderCommandHandler(
+            new OrderRepository(context),
+            new PolicyRepository(context),
+            _paymentServiceMock.Object);
 
-        var request = new CreateOrderRequest
-        {
-            PolicyId = policy.Id,
-            CustomerName = "John Doe",
-            Currency = Currency.USD,
-            Provider = PaymentProvider.Stripe
-        };
+        var command = new CreateOrderCommand(
+            PolicyId: policy.Id,
+            CustomerName: "John Doe",
+            Currency: Currency.USD,
+            Provider: PaymentProvider.Stripe,
+            CustomerId: Guid.NewGuid());
 
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => service.CreateOrderAsync(request, Guid.NewGuid()));
-        Assert.Equal("Policy is not active", exception.Message);
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => handler.Handle(command));
+        Assert.Equal("Policy is not active", ex.Message);
     }
 
     [Fact]
-    public async Task ActivateOrderAsync_ValidOrder_ReturnsSuccess()
+    public async Task ActivateOrder_ValidOrder_ReturnsSuccess()
     {
         // Arrange
         using var context = TestDbContextFactory.Create();
-        var order = new Order
-        {
-            Id = Guid.NewGuid(),
-            OrderNumber = "ORD-2026-001",
-            PolicyId = Guid.NewGuid(),
-            CustomerId = Guid.NewGuid(),
-            CustomerName = "John Doe",
-            PremiumAmount = 100m,
-            StartDate = DateTime.UtcNow,
-            EndDate = DateTime.UtcNow.AddMonths(12),
-            Status = OrderStatus.PendingPayment,
-            CreatedAt = DateTime.UtcNow
-        };
-        context.Orders.Add(order);
+        var order = CreateOrder(context);
         await context.SaveChangesAsync();
 
-        var service = new OrderCommandService(context, _paymentServiceMock.Object);
+        var service = new OrderService(new OrderRepository(context));
 
         // Act
         var result = await service.ActivateOrderAsync(order.Id, "payment-ref-123");
 
         // Assert
         Assert.Equal(OrderActivationResult.Success, result);
-
         var updatedOrder = await context.Orders.FindAsync(order.Id);
         Assert.Equal(OrderStatus.Active, updatedOrder!.Status);
         Assert.Equal("payment-ref-123", updatedOrder.PaymentReferenceId);
     }
 
     [Fact]
-    public async Task ActivateOrderAsync_OrderNotFound_ReturnsOrderNotFound()
+    public async Task ActivateOrder_OrderNotFound_ReturnsOrderNotFound()
     {
         // Arrange
         using var context = TestDbContextFactory.Create();
-        var service = new OrderCommandService(context, _paymentServiceMock.Object);
+        var service = new OrderService(new OrderRepository(context));
 
         // Act
         var result = await service.ActivateOrderAsync(Guid.NewGuid(), "payment-ref");
@@ -159,28 +151,14 @@ public class OrderCommandServiceTests
     }
 
     [Fact]
-    public async Task ActivateOrderAsync_AlreadyActive_ReturnsAlreadyProcessed()
+    public async Task ActivateOrder_AlreadyActive_ReturnsAlreadyProcessed()
     {
         // Arrange
         using var context = TestDbContextFactory.Create();
-        var order = new Order
-        {
-            Id = Guid.NewGuid(),
-            OrderNumber = "ORD-2026-001",
-            PolicyId = Guid.NewGuid(),
-            CustomerId = Guid.NewGuid(),
-            CustomerName = "John Doe",
-            PremiumAmount = 100m,
-            StartDate = DateTime.UtcNow,
-            EndDate = DateTime.UtcNow.AddMonths(12),
-            Status = OrderStatus.Active,
-            PaymentReferenceId = "existing-ref",
-            CreatedAt = DateTime.UtcNow
-        };
-        context.Orders.Add(order);
+        var order = CreateOrder(context, status: OrderStatus.Active);
         await context.SaveChangesAsync();
 
-        var service = new OrderCommandService(context, _paymentServiceMock.Object);
+        var service = new OrderService(new OrderRepository(context));
 
         // Act
         var result = await service.ActivateOrderAsync(order.Id, "new-payment-ref");
@@ -190,27 +168,14 @@ public class OrderCommandServiceTests
     }
 
     [Fact]
-    public async Task ActivateOrderAsync_CancelledOrder_ReturnsInvalidStatus()
+    public async Task ActivateOrder_CancelledOrder_ReturnsInvalidStatus()
     {
         // Arrange
         using var context = TestDbContextFactory.Create();
-        var order = new Order
-        {
-            Id = Guid.NewGuid(),
-            OrderNumber = "ORD-2026-001",
-            PolicyId = Guid.NewGuid(),
-            CustomerId = Guid.NewGuid(),
-            CustomerName = "John Doe",
-            PremiumAmount = 100m,
-            StartDate = DateTime.UtcNow,
-            EndDate = DateTime.UtcNow.AddMonths(12),
-            Status = OrderStatus.Cancelled,
-            CreatedAt = DateTime.UtcNow
-        };
-        context.Orders.Add(order);
+        var order = CreateOrder(context, status: OrderStatus.Cancelled);
         await context.SaveChangesAsync();
 
-        var service = new OrderCommandService(context, _paymentServiceMock.Object);
+        var service = new OrderService(new OrderRepository(context));
 
         // Act
         var result = await service.ActivateOrderAsync(order.Id, "payment-ref");
@@ -235,5 +200,26 @@ public class OrderCommandServiceTests
         };
         context.Policies.Add(policy);
         return policy;
+    }
+
+    private static Order CreateOrder(
+        Infrastructure.Data.InsuranceDbContext context,
+        OrderStatus status = OrderStatus.PendingPayment)
+    {
+        var order = new Order
+        {
+            Id = Guid.NewGuid(),
+            OrderNumber = "ORD-2026-001",
+            PolicyId = Guid.NewGuid(),
+            CustomerId = Guid.NewGuid(),
+            CustomerName = "John Doe",
+            PremiumAmount = 100m,
+            StartDate = DateTime.UtcNow,
+            EndDate = DateTime.UtcNow.AddMonths(12),
+            Status = status,
+            CreatedAt = DateTime.UtcNow
+        };
+        context.Orders.Add(order);
+        return order;
     }
 }

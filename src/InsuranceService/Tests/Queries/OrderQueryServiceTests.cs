@@ -1,13 +1,15 @@
+using Application.Handlers.Queries;
+using Application.Queries;
 using Domain.Entities;
 using Domain.Enums;
-using Infrastructure.Services.Queries;
+using Infrastructure.Repositories;
 
 namespace Tests.Queries;
 
 public class OrderQueryServiceTests
 {
     [Fact]
-    public async Task GetOrderByIdAsync_ExistingOrder_ReturnsOrderWithPolicy()
+    public async Task GetOrderById_ExistingOrder_ReturnsOrderWithPolicy()
     {
         // Arrange
         using var context = TestDbContextFactory.Create();
@@ -15,10 +17,10 @@ public class OrderQueryServiceTests
         var order = CreateOrder(context, policy);
         await context.SaveChangesAsync();
 
-        var service = new OrderQueryService(context);
+        var handler = new GetOrderByIdQueryHandler(new OrderRepository(context));
 
         // Act
-        var result = await service.GetOrderByIdAsync(order.Id);
+        var result = await handler.Handle(new GetOrderByIdQuery(order.Id));
 
         // Assert
         Assert.NotNull(result);
@@ -29,44 +31,39 @@ public class OrderQueryServiceTests
     }
 
     [Fact]
-    public async Task GetOrderByIdAsync_NonExistingOrder_ReturnsNull()
+    public async Task GetOrderById_NonExistingOrder_ReturnsNull()
     {
         // Arrange
         using var context = TestDbContextFactory.Create();
-        var service = new OrderQueryService(context);
+        var handler = new GetOrderByIdQueryHandler(new OrderRepository(context));
 
         // Act
-        var result = await service.GetOrderByIdAsync(Guid.NewGuid());
+        var result = await handler.Handle(new GetOrderByIdQuery(Guid.NewGuid()));
 
         // Assert
         Assert.Null(result);
     }
 
     [Fact]
-    public async Task GetOrdersByCustomerIdAsync_ReturnsOnlyCustomerOrders()
+    public async Task GetOrdersByCustomerId_ReturnsOnlyCustomerOrders()
     {
         // Arrange
         using var context = TestDbContextFactory.Create();
         var policy = CreatePolicy(context);
         var customerId = Guid.NewGuid();
-        var otherCustomerId = Guid.NewGuid();
 
         for (int i = 0; i < 3; i++)
-        {
             CreateOrder(context, policy, customerId, $"ORD-2026-{100 + i}");
-        }
 
         for (int i = 0; i < 2; i++)
-        {
-            CreateOrder(context, policy, otherCustomerId, $"ORD-2026-{200 + i}");
-        }
+            CreateOrder(context, policy, Guid.NewGuid(), $"ORD-2026-{200 + i}");
 
         await context.SaveChangesAsync();
 
-        var service = new OrderQueryService(context);
+        var handler = new GetOrdersByCustomerIdQueryHandler(new OrderRepository(context));
 
         // Act
-        var result = await service.GetOrdersByCustomerIdAsync(customerId);
+        var result = await handler.Handle(new GetOrdersByCustomerIdQuery(customerId, Page: 1, PageSize: 10));
 
         // Assert
         Assert.Equal(3, result.Items.Count());
@@ -75,22 +72,21 @@ public class OrderQueryServiceTests
     }
 
     [Fact]
-    public async Task GetAllOrdersAsync_ReturnsPaginatedResults()
+    public async Task GetAllOrders_ReturnsPaginatedResults()
     {
         // Arrange
         using var context = TestDbContextFactory.Create();
         var policy = CreatePolicy(context);
 
         for (int i = 0; i < 15; i++)
-        {
             CreateOrder(context, policy, Guid.NewGuid(), $"ORD-2026-{i:D3}");
-        }
+
         await context.SaveChangesAsync();
 
-        var service = new OrderQueryService(context);
+        var handler = new GetAllOrdersQueryHandler(new OrderRepository(context));
 
         // Act
-        var result = await service.GetAllOrdersAsync(page: 1, pageSize: 10);
+        var result = await handler.Handle(new GetAllOrdersQuery(Page: 1, PageSize: 10));
 
         // Assert
         Assert.Equal(10, result.Items.Count());
