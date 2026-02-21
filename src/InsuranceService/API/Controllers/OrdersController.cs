@@ -35,7 +35,7 @@ public class OrdersController(IMediator mediator, ILogger<OrdersController> logg
     }
 
     [HttpGet]
-    public async Task<ActionResult<PagedResponse<OrderResponse>>> GetMyOrders(
+    public async Task<ActionResult<PagedResponse<OrderResponse>>> GetOrders(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10)
     {

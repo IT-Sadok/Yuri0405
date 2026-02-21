@@ -3,6 +3,7 @@ using Application.Mediator;
 using Infrastructure.BackgroundServices;
 using Infrastructure.Configurations;
 using Infrastructure.Data;
+using Infrastructure.Repositories;
 using Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -16,8 +17,12 @@ public static class ServiceCollectionExtensions
     {
         services.AddMediator();
 
+        // Repositories
+        services.AddScoped<IPolicyRepository, PolicyRepository>();
+        services.AddScoped<IOrderRepository, OrderRepository>();
+
         // OrderService for ActivateOrderAsync (used by Kafka consumer)
-        services.AddScoped<IOrderService, OrderService>();
+        services.AddScoped<IOrderService, Application.Services.OrderService>();
 
         // Add other services
         services.AddScoped<IPaymentService, PaymentService>();
@@ -42,8 +47,8 @@ public static class ServiceCollectionExtensions
     {
         services.AddScoped<IMediator, Application.Mediator.Mediator>();
 
-        var assembly = typeof(IRequestHandler<,>).Assembly;
-        var handlerAssembly = typeof(Infrastructure.Services.Handlers.Commands.CreatePolicyCommandHandler).Assembly;
+        // Scan Application assembly for handlers
+        var handlerAssembly = typeof(Application.Handlers.Commands.CreatePolicyCommandHandler).Assembly;
 
         var handlerTypes = handlerAssembly.GetTypes()
             .Where(t => t is { IsAbstract: false, IsInterface: false })

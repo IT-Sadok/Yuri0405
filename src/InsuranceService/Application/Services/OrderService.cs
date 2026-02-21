@@ -1,14 +1,13 @@
 using Application.Interfaces;
 using Domain.Enums;
-using Infrastructure.Data;
 
-namespace Infrastructure.Services;
+namespace Application.Services;
 
-public class OrderService(InsuranceDbContext context) : IOrderService
+public class OrderService(IOrderRepository orderRepository) : IOrderService
 {
     public async Task<OrderActivationResult> ActivateOrderAsync(Guid orderId, string paymentReferenceId)
     {
-        var order = await context.Orders.FindAsync(orderId);
+        var order = await orderRepository.GetByIdAsync(orderId);
 
         if (order == null)
         {
@@ -28,7 +27,7 @@ public class OrderService(InsuranceDbContext context) : IOrderService
         order.Status = OrderStatus.Active;
         order.PaymentReferenceId = paymentReferenceId;
 
-        await context.SaveChangesAsync();
+        await orderRepository.SaveChangesAsync();
 
         return OrderActivationResult.Success;
     }

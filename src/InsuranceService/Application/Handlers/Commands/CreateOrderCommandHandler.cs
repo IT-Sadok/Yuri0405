@@ -4,17 +4,15 @@ using Application.Interfaces;
 using Application.Mediator;
 using Domain.Entities;
 using Domain.Enums;
-using Infrastructure.Data;
-using Microsoft.EntityFrameworkCore;
 
-namespace Infrastructure.Services.Handlers.Commands;
+namespace Application.Handlers.Commands;
 
-public class CreateOrderCommandHandler(InsuranceDbContext context, IPaymentService paymentService)
+public class CreateOrderCommandHandler(IOrderRepository orderRepository, IPolicyRepository policyRepository, IPaymentService paymentService)
     : IRequestHandler<CreateOrderCommand, CreateOrderResponse>
 {
     public async Task<CreateOrderResponse> Handle(CreateOrderCommand command, CancellationToken cancellationToken = default)
     {
-        var policy = await context.Policies.FindAsync([command.PolicyId], cancellationToken);
+        var policy = await policyRepository.GetByIdAsync(command.PolicyId, cancellationToken);
         if (policy == null)
         {
             throw new InvalidOperationException("Policy not found");
@@ -25,7 +23,7 @@ public class CreateOrderCommandHandler(InsuranceDbContext context, IPaymentServi
             throw new InvalidOperationException("Policy is not active");
         }
 
-        var orderNumber = await GenerateOrderNumberAsync(cancellationToken);
+        var orderNumber = await orderRepository.GenerateOrderNumberAsync(cancellationToken);
         var startDate = DateTime.UtcNow;
         var endDate = startDate.AddMonths(policy.DurationMonths);
 
@@ -43,8 +41,8 @@ public class CreateOrderCommandHandler(InsuranceDbContext context, IPaymentServi
             CreatedAt = DateTime.UtcNow
         };
 
-        context.Orders.Add(order);
-        await context.SaveChangesAsync(cancellationToken);
+        await orderRepository.AddAsync(order, cancellationToken);
+        await orderRepository.SaveChangesAsync(cancellationToken);
 
         var paymentRequest = new InitiatePaymentRequest
         {
@@ -62,29 +60,6 @@ public class CreateOrderCommandHandler(InsuranceDbContext context, IPaymentServi
             CheckoutUrl = paymentResponse.CheckoutUrl,
             PaymentId = paymentResponse.PaymentId
         };
-    }
-
-    private async Task<string> GenerateOrderNumberAsync(CancellationToken cancellationToken)
-    {
-        var currentYear = DateTime.UtcNow.Year;
-        var prefix = $"ORD-{currentYear}-";
-
-        var orderNumbers = await context.Orders
-            .Where(o => o.OrderNumber.StartsWith(prefix))
-            .Select(o => o.OrderNumber)
-            .ToListAsync(cancellationToken);
-
-        if (!orderNumbers.Any())
-        {
-            return $"ORD-{currentYear}-001";
-        }
-
-        var maxNumber = orderNumbers
-            .Select(on => int.TryParse(on.Split('-').Last(), out var num) ? num : 0)
-            .DefaultIfEmpty(0)
-            .Max();
-
-        return $"ORD-{currentYear}-{maxNumber + 1:D3}";
     }
 
     private static OrderResponse MapToResponse(Order order, Policy policy)

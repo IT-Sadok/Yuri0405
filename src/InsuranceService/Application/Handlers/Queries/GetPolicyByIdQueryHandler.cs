@@ -1,22 +1,18 @@
 using Application.DTOs;
+using Application.Interfaces;
 using Application.Mediator;
 using Application.Queries;
-using Domain.Entities;
-using Infrastructure.Data;
 
-namespace Infrastructure.Services.Handlers.Queries;
+namespace Application.Handlers.Queries;
 
-public class GetPolicyByIdQueryHandler(InsuranceDbContext context)
+public class GetPolicyByIdQueryHandler(IPolicyRepository policyRepository)
     : IRequestHandler<GetPolicyByIdQuery, PolicyResponse?>
 {
     public async Task<PolicyResponse?> Handle(GetPolicyByIdQuery query, CancellationToken cancellationToken = default)
     {
-        var policy = await context.Policies.FindAsync([query.Id], cancellationToken);
-        return policy != null ? MapToResponse(policy) : null;
-    }
+        var policy = await policyRepository.GetByIdAsync(query.Id, cancellationToken);
+        if (policy == null) return null;
 
-    private static PolicyResponse MapToResponse(Policy policy)
-    {
         return new PolicyResponse
         {
             Id = policy.Id,

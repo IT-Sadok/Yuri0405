@@ -1,13 +1,13 @@
 using Application.Commands;
 using Application.DTOs;
+using Application.Interfaces;
 using Application.Mediator;
 using Domain.Entities;
 using Domain.Enums;
-using Infrastructure.Data;
 
-namespace Infrastructure.Services.Handlers.Commands;
+namespace Application.Handlers.Commands;
 
-public class CreatePolicyCommandHandler(InsuranceDbContext context)
+public class CreatePolicyCommandHandler(IPolicyRepository policyRepository)
     : IRequestHandler<CreatePolicyCommand, PolicyResponse>
 {
     public async Task<PolicyResponse> Handle(CreatePolicyCommand command, CancellationToken cancellationToken = default)
@@ -25,8 +25,8 @@ public class CreatePolicyCommandHandler(InsuranceDbContext context)
             CreatedAt = DateTime.UtcNow
         };
 
-        context.Policies.Add(policy);
-        await context.SaveChangesAsync(cancellationToken);
+        await policyRepository.AddAsync(policy, cancellationToken);
+        await policyRepository.SaveChangesAsync(cancellationToken);
 
         return new PolicyResponse
         {
