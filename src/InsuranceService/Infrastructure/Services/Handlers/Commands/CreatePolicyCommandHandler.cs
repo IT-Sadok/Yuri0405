@@ -12,17 +12,15 @@ public class CreatePolicyCommandHandler(InsuranceDbContext context)
 {
     public async Task<PolicyResponse> Handle(CreatePolicyCommand command, CancellationToken cancellationToken = default)
     {
-        var request = command.Request;
-
         var policy = new Policy
         {
             Id = Guid.NewGuid(),
-            Name = request.Name,
-            Description = request.Description,
-            ProductType = request.ProductType,
-            CoverageAmount = request.CoverageAmount,
-            PremiumAmount = request.PremiumAmount,
-            DurationMonths = request.DurationMonths,
+            Name = command.Name,
+            Description = command.Description,
+            ProductType = command.ProductType,
+            CoverageAmount = command.CoverageAmount,
+            PremiumAmount = command.PremiumAmount,
+            DurationMonths = command.DurationMonths,
             Status = PolicyStatus.Active,
             CreatedAt = DateTime.UtcNow
         };

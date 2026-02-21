@@ -1,6 +1,12 @@
 using Application.DTOs;
 using Application.Mediator;
+using Domain.Enums;
 
 namespace Application.Commands;
 
-public record CreateOrderCommand(CreateOrderRequest Request, Guid CustomerId) : IRequest<CreateOrderResponse>;
+public record CreateOrderCommand(
+    Guid PolicyId,
+    string CustomerName,
+    Currency Currency,
+    PaymentProvider Provider,
+    Guid CustomerId = default) : IRequest<CreateOrderResponse>;

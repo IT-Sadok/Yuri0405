@@ -14,7 +14,7 @@ namespace API.Controllers;
 public class OrdersController(IMediator mediator, ILogger<OrdersController> logger) : ControllerBase
 {
     [HttpPost]
-    public async Task<ActionResult<CreateOrderResponse>> CreateOrder([FromBody] CreateOrderRequest request)
+    public async Task<ActionResult<CreateOrderResponse>> CreateOrder([FromBody] CreateOrderCommand command)
     {
         var customerId = GetCustomerIdFromClaims();
         if (customerId == Guid.Empty)
@@ -24,7 +24,7 @@ public class OrdersController(IMediator mediator, ILogger<OrdersController> logg
 
         try
         {
-            var response = await mediator.Send(new CreateOrderCommand(request, customerId));
+            var response = await mediator.Send(command with { CustomerId = customerId });
             return CreatedAtAction(nameof(GetOrderById), new { id = response.Order.Id }, response);
         }
         catch (InvalidOperationException ex)

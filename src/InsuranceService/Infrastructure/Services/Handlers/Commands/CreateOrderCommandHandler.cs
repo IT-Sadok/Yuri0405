@@ -14,10 +14,7 @@ public class CreateOrderCommandHandler(InsuranceDbContext context, IPaymentServi
 {
     public async Task<CreateOrderResponse> Handle(CreateOrderCommand command, CancellationToken cancellationToken = default)
     {
-        var request = command.Request;
-        var customerId = command.CustomerId;
-
-        var policy = await context.Policies.FindAsync([request.PolicyId], cancellationToken);
+        var policy = await context.Policies.FindAsync([command.PolicyId], cancellationToken);
         if (policy == null)
         {
             throw new InvalidOperationException("Policy not found");
@@ -37,8 +34,8 @@ public class CreateOrderCommandHandler(InsuranceDbContext context, IPaymentServi
             Id = Guid.NewGuid(),
             OrderNumber = orderNumber,
             PolicyId = policy.Id,
-            CustomerId = customerId,
-            CustomerName = request.CustomerName,
+            CustomerId = command.CustomerId,
+            CustomerName = command.CustomerName,
             PremiumAmount = policy.PremiumAmount,
             StartDate = startDate,
             EndDate = endDate,
@@ -53,8 +50,8 @@ public class CreateOrderCommandHandler(InsuranceDbContext context, IPaymentServi
         {
             OrderId = order.Id,
             Amount = order.PremiumAmount,
-            Currency = request.Currency,
-            Provider = request.Provider
+            Currency = command.Currency,
+            Provider = command.Provider
         };
 
         var paymentResponse = await paymentService.InitiatePaymentAsync(paymentRequest);

@@ -13,11 +13,11 @@ namespace API.Controllers;
 public class PoliciesController(IMediator mediator, ILogger<PoliciesController> logger) : ControllerBase
 {
     [HttpPost]
-    public async Task<ActionResult<PolicyResponse>> CreatePolicy([FromBody] CreatePolicyRequest request)
+    public async Task<ActionResult<PolicyResponse>> CreatePolicy([FromBody] CreatePolicyCommand command)
     {
         try
         {
-            var policy = await mediator.Send(new CreatePolicyCommand(request));
+            var policy = await mediator.Send(command);
             return CreatedAtAction(nameof(GetPolicyById), new { id = policy.Id }, policy);
         }
         catch (InvalidOperationException ex)
